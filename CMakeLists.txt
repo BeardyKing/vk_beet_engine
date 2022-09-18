@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.21)
 project(vk_beet_engine)
 add_subdirectory(third)
 
+find_package(Vulkan REQUIRED)
+
 #======== SOURCE ==========#
 
 file(GLOB_RECURSE BEET_CORE_SOURCES
@@ -36,7 +38,9 @@ target_link_libraries(beet
         stb
         imgui
         imguizmo
+        Vulkan::Vulkan
         )
+
 
 #======= PROPERTIES ========#
 
@@ -49,6 +53,40 @@ set_target_properties(beet PROPERTIES OUTPUT_NAME beet_build)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/bin)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/res)
+
+#========= SHADER =========#
+#https://gist.github.com/evilactually/a0d191701cb48f157b05be7f74d79396
+
+if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+    set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
+else ()
+    set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslangValidator.exe")
+endif ()
+
+file(GLOB_RECURSE GLSL_SOURCE_FILES
+        "res/shaders/*.frag"
+        "res/shaders/*.vert"
+        )
+
+foreach (GLSL ${GLSL_SOURCE_FILES})
+    get_filename_component(FILE_NAME ${GLSL} NAME)
+    message([STATUS] ${GLSL})
+    set(SPIRV "${GLSL}.spv")
+    add_custom_command(
+            OUTPUT ${SPIRV}
+#            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/res/shaders"
+            COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+            DEPENDS ${GLSL})
+    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
+endforeach (GLSL)
+
+add_custom_target(
+        Shaders
+        DEPENDS ${SPIRV_BINARY_FILES}
+)
+
+add_dependencies(beet Shaders)
+
 
 #======= RESOURCES ========#
 
@@ -68,6 +106,7 @@ endforeach ()
 
 #==========================#
 
+
 #========= DEBUG ==========#
 
 
@@ -79,3 +118,6 @@ else ()
 endif ()
 
 #==========================#
+
+
+
