@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <beet/device.h>
 #include <beet/renderer.h>
 #include <beet/window.h>
 
@@ -16,15 +17,14 @@ namespace beet {
 class Engine {
    public:
     Engine();
-
     ~Engine();
 
     void update_modules();
-
     bool is_open();
 
     std::weak_ptr<Renderer> get_renderer_module() { return m_rendererModule; }
     std::weak_ptr<Window> get_window_module() { return m_windowModule; }
+    std::weak_ptr<Device> get_device_module() { return m_deviceModule; }
 
     inline void swap_frame();
 
@@ -33,6 +33,7 @@ class Engine {
 
     std::shared_ptr<Renderer> m_rendererModule;
     std::shared_ptr<Window> m_windowModule;
+    std::shared_ptr<Device> m_deviceModule;
 };
 
 }  // namespace beet

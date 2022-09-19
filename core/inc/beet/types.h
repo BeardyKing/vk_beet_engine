@@ -8,6 +8,9 @@
 #include <glm/gtx/quaternion.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#define BEET_TRUE 1
+#define BEET_FALSE 0
+
 namespace beet {
 using namespace glm;
 

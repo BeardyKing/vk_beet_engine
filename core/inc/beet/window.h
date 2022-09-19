@@ -14,7 +14,7 @@ namespace beet {
 
 class Window : public Subsystem {
    public:
-    Window(int width, int height, std::string title, Engine& engine);
+    Window(int width, int height, const std::string& title, Engine& engine);
     ~Window();
 
     void on_awake() override;
@@ -38,7 +38,7 @@ class Window : public Subsystem {
 
     std::shared_ptr<InputManager> get_input_manager();
     GLFWwindow* get_glfw_window() { return m_window; };
-
+    const char** get_extensions(uint32_t& extensionCount);
    protected:
     void setup_callbacks();
 

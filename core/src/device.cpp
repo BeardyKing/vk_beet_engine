@@ -1,0 +1,189 @@
+#include <beet/assert.h>
+#include <beet/device.h>
+#include <beet/engine.h>
+
+namespace beet {
+
+Device::Device(beet::Engine& engine) : m_engine(engine) {}
+Device::~Device() {}
+
+void Device::on_awake() {
+    create_instance();
+    setup_debug_messenger();
+}
+
+void Device::on_update(double deltaTime) {}
+void Device::on_late_update() {}
+
+void Device::on_destroy() {
+    if (ENABLED_VALIDATION_LAYERS) {
+        destroy_debug_utils_messengerEXT(m_instance, m_debugMessenger, nullptr);
+    }
+
+    vkDestroyInstance(m_instance, nullptr);
+    log::debug("Device destroyed");
+}
+
+void Device::create_instance() {
+    BEET_ASSERT_MESSAGE(ENABLED_VALIDATION_LAYERS && check_validation_layer_support(),
+                        "validation layers requested, but not available!");
+
+    VkApplicationInfo appInformation{};
+    appInformation.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInformation.pApplicationName = "vk_beetroot";
+    appInformation.applicationVersion = VK_MAKE_VERSION(0, 1, 0);
+    appInformation.pEngineName = "beetroot";
+    appInformation.engineVersion = VK_MAKE_VERSION(0, 1, 0);
+    appInformation.apiVersion = VK_API_VERSION_1_0;
+
+    VkInstanceCreateInfo createInformation{};
+    createInformation.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInformation.pApplicationInfo = &appInformation;
+
+    auto extensions = get_required_extensions();
+    createInformation.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
+    createInformation.ppEnabledExtensionNames = extensions.data();
+
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+    if (ENABLED_VALIDATION_LAYERS) {
+        createInformation.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
+        createInformation.ppEnabledLayerNames = validation_layers.data();
+
+        populate_debug_messenger_create_info(debugCreateInfo);
+        createInformation.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+    } else {
+        createInformation.enabledLayerCount = 0;
+        createInformation.pNext = nullptr;
+    }
+
+    VkResult result = vkCreateInstance(&createInformation, nullptr, &m_instance);
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "failed to create instance!")
+}
+
+std::vector<const char*> Device::get_required_extensions() {
+    uint32_t glfwExtensionCount = 0;
+    const char** glfwExtensions;
+    glfwExtensions = m_engine.get_window_module().lock()->get_extensions(glfwExtensionCount);
+
+    std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
+
+    if (ENABLED_VALIDATION_LAYERS) {
+        extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    }
+
+    return extensions;
+}
+
+void Device::setup_debug_messenger() {
+    if (!ENABLED_VALIDATION_LAYERS) {
+        return;
+    }
+
+    VkDebugUtilsMessengerCreateInfoEXT createInformation;
+    populate_debug_messenger_create_info(createInformation);
+
+    BEET_ASSERT_MESSAGE(
+        create_debug_utils_messenger_EXT(m_instance, &createInformation, nullptr, &m_debugMessenger) == VK_SUCCESS,
+        "failed to set up debug messenger!")
+}
+
+void Device::populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& createInformation) {
+    createInformation = {};
+    createInformation.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    createInformation.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
+                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    createInformation.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                    VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    createInformation.pfnUserCallback = debug_callback;
+}
+
+bool Device::check_validation_layer_support() {
+    uint32_t layerCount;
+    vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+    std::vector<VkLayerProperties> availableLayers(layerCount);
+    vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+    for (const char* layerName : validation_layers) {
+        bool layerFound = false;
+
+        for (const auto& layerProperties : availableLayers) {
+            if (strcmp(layerName, layerProperties.layerName) == 0) {
+                layerFound = true;
+                break;
+            }
+        }
+
+        if (!layerFound) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+VkResult create_debug_utils_messenger_EXT(VkInstance instance,
+                                          const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                          const VkAllocationCallbacks* pAllocator,
+                                          VkDebugUtilsMessengerEXT* pDebugMessenger) {
+    auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+    } else {
+        return VK_ERROR_EXTENSION_NOT_PRESENT;
+    }
+}
+
+void destroy_debug_utils_messengerEXT(VkInstance instance,
+                                      VkDebugUtilsMessengerEXT debugMessenger,
+                                      const VkAllocationCallbacks* pAllocator) {
+    auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+    if (func != nullptr) {
+        func(instance, debugMessenger, pAllocator);
+    }
+}
+
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                                                     VkDebugUtilsMessageTypeFlagsEXT messageType,
+                                                     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+                                                     void* pUserData) {
+    std::string prefix{};
+    switch (messageType) {
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+            prefix = "[GENERAL]: ";
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+            prefix = "[VALIDATION]: ";
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+            prefix = "[PERFORMANCE]: ";
+            break;
+        default:
+            prefix = "[UNKNOWN]: ";
+            break;
+    }
+    switch (messageSeverity) {
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+#if DEVICE_VERBOSE_LOGGING
+            log::debug("{}{}", prefix, pCallbackData->pMessage);
+#endif
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+#if DEVICE_VERBOSE_LOGGING
+            log::warn("{}{}", prefix, pCallbackData->pMessage);
+#endif
+            break;
+        case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+            log::error("{}{}", prefix, pCallbackData->pMessage);
+            break;
+        default:
+            log::info("{}{}", prefix, pCallbackData->pMessage);
+            break;
+    }
+
+    return VK_FALSE;
+}
+
+}  // namespace beet

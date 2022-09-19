@@ -5,10 +5,12 @@ namespace beet {
 Engine::Engine() {
     m_windowModule = std::make_shared<Window>(1024, 768, "vk_beetroot", *this);
     m_rendererModule = std::make_shared<Renderer>(*this);
+    m_deviceModule = std::make_shared<Device>(*this);
 
     // order dependent
     m_engineModules.emplace_back(m_windowModule);
     m_engineModules.emplace_back(m_rendererModule);
+    m_engineModules.emplace_back(m_deviceModule);
 
     for (auto& module : m_engineModules) {
         module->on_awake();

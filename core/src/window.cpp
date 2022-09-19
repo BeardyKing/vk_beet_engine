@@ -10,7 +10,7 @@
 
 namespace beet {
 
-Window::Window(int width, int height, std::string title, Engine& engine)
+Window::Window(int width, int height, const std::string& title, Engine& engine)
     : m_width(width),
       m_height(height),
       m_title(title),
@@ -18,6 +18,9 @@ Window::Window(int width, int height, std::string title, Engine& engine)
       m_engine(engine),
       m_input(std::make_shared<InputManager>(*this)) {
     glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
 
@@ -185,6 +188,9 @@ void Window::set_cursor_hide(bool state) {
 
 std::shared_ptr<InputManager> Window::get_input_manager() {
     return m_input;
+}
+const char** Window::get_extensions(uint32_t& extensionCount) {
+    return glfwGetRequiredInstanceExtensions(&extensionCount);
 }
 
 }  // namespace beet
