@@ -1,17 +1,24 @@
 #pragma once
 
-#define DEVICE_VERBOSE_LOGGING BEET_TRUE
+#define DEVICE_VERBOSE_LOGGING BEET_FALSE
 
 #include <vulkan/vulkan.h>
 
 #include <beet/log.h>
 #include <beet/subsystem.h>
 
+#include <optional>
 #include <string>
 
 namespace beet {
 class Engine;
 }
+
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+
+    bool is_complete() { return graphicsFamily.has_value(); }
+};
 
 namespace beet {
 class Device : public Subsystem {
@@ -27,16 +34,19 @@ class Device : public Subsystem {
    private:
     void create_instance();
     void setup_debug_messenger();
+    void pick_physical_device();
 
    private:
     std::vector<const char*> get_required_extensions();
 
     bool check_validation_layer_support();
     void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& createInformation);
+    bool is_device_suitable(VkPhysicalDevice device);
 
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
+    VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
 
    private:
     Engine& m_engine;

@@ -10,6 +10,7 @@ Device::~Device() {}
 void Device::on_awake() {
     create_instance();
     setup_debug_messenger();
+    pick_physical_device();
 }
 
 void Device::on_update(double deltaTime) {}
@@ -58,6 +59,55 @@ void Device::create_instance() {
 
     VkResult result = vkCreateInstance(&createInformation, nullptr, &m_instance);
     BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "failed to create instance!")
+}
+
+QueueFamilyIndices find_queue_families(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        if (indices.is_complete()) {
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
+
+bool Device::is_device_suitable(VkPhysicalDevice device) {
+    QueueFamilyIndices indices = find_queue_families(device);
+
+    return indices.is_complete();
+}
+
+void Device::pick_physical_device() {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+    BEET_ASSERT_MESSAGE(deviceCount, "failed to find GPUs with Vulkan support!");
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(m_instance, &deviceCount, devices.data());
+
+    for (const auto& device : devices) {
+        if (is_device_suitable(device)) {
+            m_physicalDevice = device;
+            break;
+        }
+    }
+
+    BEET_ASSERT_MESSAGE(m_physicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU!");
 }
 
 std::vector<const char*> Device::get_required_extensions() {
