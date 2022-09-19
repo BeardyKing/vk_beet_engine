@@ -93,6 +93,7 @@ bool Device::is_device_suitable(VkPhysicalDevice device) {
 }
 
 void Device::pick_physical_device() {
+    //TODO select device from score + manual select
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
     BEET_ASSERT_MESSAGE(deviceCount, "failed to find GPUs with Vulkan support!");
@@ -102,6 +103,9 @@ void Device::pick_physical_device() {
 
     for (const auto& device : devices) {
         if (is_device_suitable(device)) {
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(device, &properties);
+            log::debug("Physical device: {}", properties.deviceName);
             m_physicalDevice = device;
             break;
         }
