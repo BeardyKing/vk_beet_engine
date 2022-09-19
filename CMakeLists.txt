@@ -50,11 +50,8 @@ set_target_properties(beet PROPERTIES OUTPUT_NAME beet_build)
 
 #==========================#
 
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/bin)
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/res)
-
 #========= SHADER =========#
+
 #https://gist.github.com/evilactually/a0d191701cb48f157b05be7f74d79396
 
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
@@ -63,33 +60,12 @@ else ()
     set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslangValidator.exe")
 endif ()
 
-file(GLOB_RECURSE GLSL_SOURCE_FILES
-        "res/shaders/*.frag"
-        "res/shaders/*.vert"
-        )
-
-foreach (GLSL ${GLSL_SOURCE_FILES})
-    get_filename_component(FILE_NAME ${GLSL} NAME)
-    message([STATUS] ${GLSL})
-    set(SPIRV "${GLSL}.spv")
-    add_custom_command(
-            OUTPUT ${SPIRV}
-#            COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_BINARY_DIR}/res/shaders"
-            COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
-            DEPENDS ${GLSL})
-    list(APPEND SPIRV_BINARY_FILES ${SPIRV})
-endforeach (GLSL)
-
-add_custom_target(
-        Shaders
-        DEPENDS ${SPIRV_BINARY_FILES}
-)
-
-add_dependencies(beet Shaders)
-
+#==========================#
 
 #======= RESOURCES ========#
 
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist)
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/bin)
 file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/res)
 
 file(GLOB_RECURSE BEET_RESOURCES LIST_DIRECTORIES false "${CMAKE_SOURCE_DIR}/res/*")
@@ -98,14 +74,27 @@ add_custom_target(beet_resources ALL DEPENDS ${BEET_RESOURCES})
 foreach (RESOURCE_FILE ${BEET_RESOURCES})
     get_filename_component(FILE_NAME ${RESOURCE_FILE} NAME)
     get_filename_component(PARENT_DIR ${RESOURCE_FILE} DIRECTORY)
+    get_filename_component(FILE_EXT ${RESOURCE_FILE} LAST_EXT)
     string(REGEX REPLACE "^${CMAKE_SOURCE_DIR}/res" "" PARENT_DIR ${PARENT_DIR})
+    set(TARGET_FILE_NAME "${CMAKE_BINARY_DIR}/dist/res${PARENT_DIR}/${FILE_NAME}")
 
-    set(FILE_NAME "${CMAKE_BINARY_DIR}/dist/res/${PARENT_DIR}/${FILE_NAME}")
-    configure_file(${RESOURCE_FILE} ${FILE_NAME} COPYONLY)
+    if (${FILE_EXT} STREQUAL ".vert" OR ${FILE_EXT} STREQUAL ".frag")
+        # COMPILE SPIRV to BUILD (.vert/.frag)
+        # This is the fallback until hot reloading shaders in engine
+        file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/dist/res${PARENT_DIR}/)
+
+        set(SPIRV "${TARGET_FILE_NAME}.spv")
+        exec_program(
+                ${GLSL_VALIDATOR}
+                ARGS -V ${RESOURCE_FILE} -o ${SPIRV}
+        )
+    else ()
+        #COPY RESOURCE FILES TO BUILD
+        configure_file(${RESOURCE_FILE} ${TARGET_FILE_NAME} COPYONLY)
+    endif ()
 endforeach ()
 
 #==========================#
-
 
 #========= DEBUG ==========#
 

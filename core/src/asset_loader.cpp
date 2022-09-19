@@ -13,6 +13,7 @@ std::vector<char> AssetLoader::read_file(const std::string& path) {
 
     if (!file.is_open()) {
         log::warn("failed to find path: {}", path);
+        return std::vector<char>{};
     }
 
     size_t fileSize = static_cast<size_t>(file.tellg());

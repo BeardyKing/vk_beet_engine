@@ -24,7 +24,8 @@ class Renderer : public Subsystem {
     void on_destroy() override;
 
    private:
-    AssetLoader loader{"../res/shaders/simple_shader.vert","../res/shaders/simple_shader.frag"};
+    AssetLoader loader{"../res/shaders/simple_shader.vert.spv", "../res/shaders/simple_shader.frag.spv"};
+
    private:
     Engine& m_engine;
 };
