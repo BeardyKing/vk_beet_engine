@@ -37,6 +37,7 @@ class Device : public Subsystem {
     void pick_physical_device();
     void create_logical_device();
     void create_swap_chain();
+    void create_image_views();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -63,6 +64,7 @@ class Device : public Subsystem {
     std::vector<VkImage> m_swapChainImages;
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
+    std::vector<VkImageView> m_swapChainImageViews;
 
    private:
     Engine& m_engine;
