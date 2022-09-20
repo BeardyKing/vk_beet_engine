@@ -1,3 +1,5 @@
+#include <set>
+
 #include <beet/assert.h>
 #include <beet/device.h>
 #include <beet/engine.h>
@@ -10,6 +12,7 @@ Device::~Device() {}
 void Device::on_awake() {
     create_instance();
     setup_debug_messenger();
+    create_surface();
     pick_physical_device();
     create_logical_device();
 }
@@ -24,7 +27,9 @@ void Device::on_destroy() {
         destroy_debug_utils_messengerEXT(m_instance, m_debugMessenger, nullptr);
     }
 
+    vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     vkDestroyInstance(m_instance, nullptr);
+
     log::debug("Device destroyed");
 }
 
@@ -80,6 +85,13 @@ QueueFamilyIndices Device::find_queue_families(VkPhysicalDevice device) {
             indices.graphicsFamily = i;
         }
 
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport);
+
+        if (presentSupport) {
+            indices.presentFamily = i;
+        }
+
         if (indices.is_complete()) {
             break;
         }
@@ -121,20 +133,26 @@ void Device::pick_physical_device() {
 void Device::create_logical_device() {
     QueueFamilyIndices indices = find_queue_families(m_physicalDevice);
 
-    VkDeviceQueueCreateInfo queueCreateInformation{};
-    queueCreateInformation.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInformation.queueFamilyIndex = indices.graphicsFamily.value();
-    queueCreateInformation.queueCount = 1;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     float queuePriority = 1.0f;
-    queueCreateInformation.pQueuePriorities = &queuePriority;
+    for (uint32_t queueFamily : uniqueQueueFamilies) {
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = queueFamily;
+        queueCreateInfo.queueCount = 1;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+        queueCreateInfos.push_back(queueCreateInfo);
+    }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
     VkDeviceCreateInfo createInformation{};
     createInformation.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-    createInformation.pQueueCreateInfos = &queueCreateInformation;
-    createInformation.queueCreateInfoCount = 1;
+
+    createInformation.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInformation.pQueueCreateInfos = queueCreateInfos.data();
 
     createInformation.pEnabledFeatures = &deviceFeatures;
 
@@ -151,6 +169,7 @@ void Device::create_logical_device() {
                         "failed to create logical device!")
 
     vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
+    vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
 }
 
 std::vector<const char*> Device::get_required_extensions() {
@@ -215,6 +234,9 @@ bool Device::check_validation_layer_support() {
     }
 
     return true;
+}
+void Device::create_surface() {
+    m_engine.get_window_module().lock().get()->create_surface(m_instance, m_surface);
 }
 
 VkResult create_debug_utils_messenger_EXT(VkInstance instance,

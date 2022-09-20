@@ -16,8 +16,9 @@ class Engine;
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
 
-    bool is_complete() { return graphicsFamily.has_value(); }
+    bool is_complete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
 };
 
 namespace beet {
@@ -34,6 +35,7 @@ class Device : public Subsystem {
    private:
     void create_instance();
     void setup_debug_messenger();
+    void create_surface();
     void pick_physical_device();
     void create_logical_device();
 
@@ -43,13 +45,16 @@ class Device : public Subsystem {
     bool check_validation_layer_support();
     void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& createInformation);
     bool is_device_suitable(VkPhysicalDevice device);
-    static QueueFamilyIndices find_queue_families(VkPhysicalDevice device);
+    QueueFamilyIndices find_queue_families(VkPhysicalDevice device);
+
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
     VkQueue m_graphicsQueue;
+    VkSurfaceKHR m_surface;
+    VkQueue m_presentQueue;
 
    private:
     Engine& m_engine;

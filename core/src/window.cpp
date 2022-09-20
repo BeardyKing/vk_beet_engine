@@ -1,4 +1,5 @@
-
+#define VK_USE_PLATFORM_WIN32_KHR
+#define GLFW_INCLUDE_VULKAN
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
@@ -191,6 +192,10 @@ std::shared_ptr<InputManager> Window::get_input_manager() {
 }
 const char** Window::get_extensions(uint32_t& extensionCount) {
     return glfwGetRequiredInstanceExtensions(&extensionCount);
+}
+void Window::create_surface(VkInstance& instance, VkSurfaceKHR& surface) {
+    BEET_ASSERT_MESSAGE(glfwCreateWindowSurface(instance, m_window, nullptr, &surface) == VK_SUCCESS,
+                        "failed to create window surface!");
 }
 
 }  // namespace beet

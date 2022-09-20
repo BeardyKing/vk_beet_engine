@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
+
 #include <beet/input_manager.h>
 #include <beet/subsystem.h>
 #include <memory>
@@ -39,6 +41,8 @@ class Window : public Subsystem {
     std::shared_ptr<InputManager> get_input_manager();
     GLFWwindow* get_glfw_window() { return m_window; };
     const char** get_extensions(uint32_t& extensionCount);
+    void create_surface(VkInstance& instance, VkSurfaceKHR& surface);
+
    protected:
     void setup_callbacks();
 
