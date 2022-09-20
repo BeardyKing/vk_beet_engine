@@ -11,12 +11,15 @@ void Device::on_awake() {
     create_instance();
     setup_debug_messenger();
     pick_physical_device();
+    create_logical_device();
 }
 
 void Device::on_update(double deltaTime) {}
 void Device::on_late_update() {}
 
 void Device::on_destroy() {
+    vkDestroyDevice(m_device, nullptr);
+
     if (ENABLED_VALIDATION_LAYERS) {
         destroy_debug_utils_messengerEXT(m_instance, m_debugMessenger, nullptr);
     }
@@ -46,9 +49,10 @@ void Device::create_instance() {
     createInformation.ppEnabledExtensionNames = extensions.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+
     if (ENABLED_VALIDATION_LAYERS) {
-        createInformation.enabledLayerCount = static_cast<uint32_t>(validation_layers.size());
-        createInformation.ppEnabledLayerNames = validation_layers.data();
+        createInformation.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInformation.ppEnabledLayerNames = validationLayers.data();
 
         populate_debug_messenger_create_info(debugCreateInfo);
         createInformation.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
@@ -61,7 +65,7 @@ void Device::create_instance() {
     BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "failed to create instance!")
 }
 
-QueueFamilyIndices find_queue_families(VkPhysicalDevice device) {
+QueueFamilyIndices Device::find_queue_families(VkPhysicalDevice device) {
     QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount = 0;
@@ -93,7 +97,7 @@ bool Device::is_device_suitable(VkPhysicalDevice device) {
 }
 
 void Device::pick_physical_device() {
-    //TODO select device from score + manual select
+    // TODO select device from score + manual select
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
     BEET_ASSERT_MESSAGE(deviceCount, "failed to find GPUs with Vulkan support!");
@@ -112,6 +116,41 @@ void Device::pick_physical_device() {
     }
 
     BEET_ASSERT_MESSAGE(m_physicalDevice != VK_NULL_HANDLE, "failed to find a suitable GPU!");
+}
+
+void Device::create_logical_device() {
+    QueueFamilyIndices indices = find_queue_families(m_physicalDevice);
+
+    VkDeviceQueueCreateInfo queueCreateInformation{};
+    queueCreateInformation.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInformation.queueFamilyIndex = indices.graphicsFamily.value();
+    queueCreateInformation.queueCount = 1;
+
+    float queuePriority = 1.0f;
+    queueCreateInformation.pQueuePriorities = &queuePriority;
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    VkDeviceCreateInfo createInformation{};
+    createInformation.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+    createInformation.pQueueCreateInfos = &queueCreateInformation;
+    createInformation.queueCreateInfoCount = 1;
+
+    createInformation.pEnabledFeatures = &deviceFeatures;
+
+    createInformation.enabledExtensionCount = 0;
+
+    if (ENABLED_VALIDATION_LAYERS) {
+        createInformation.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInformation.ppEnabledLayerNames = validationLayers.data();
+    } else {
+        createInformation.enabledLayerCount = 0;
+    }
+
+    BEET_ASSERT_MESSAGE(vkCreateDevice(m_physicalDevice, &createInformation, nullptr, &m_device) == VK_SUCCESS,
+                        "failed to create logical device!")
+
+    vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
 }
 
 std::vector<const char*> Device::get_required_extensions() {
@@ -160,7 +199,7 @@ bool Device::check_validation_layer_support() {
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-    for (const char* layerName : validation_layers) {
+    for (const char* layerName : validationLayers) {
         bool layerFound = false;
 
         for (const auto& layerProperties : availableLayers) {

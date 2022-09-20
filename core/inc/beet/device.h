@@ -35,6 +35,7 @@ class Device : public Subsystem {
     void create_instance();
     void setup_debug_messenger();
     void pick_physical_device();
+    void create_logical_device();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -42,11 +43,13 @@ class Device : public Subsystem {
     bool check_validation_layer_support();
     void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& createInformation);
     bool is_device_suitable(VkPhysicalDevice device);
-
+    static QueueFamilyIndices find_queue_families(VkPhysicalDevice device);
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    VkDevice m_device;
+    VkQueue m_graphicsQueue;
 
    private:
     Engine& m_engine;
@@ -55,7 +58,7 @@ class Device : public Subsystem {
 
 namespace beet {
 
-const std::vector<const char*> validation_layers = {"VK_LAYER_KHRONOS_validation"};
+const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
 VkResult create_debug_utils_messenger_EXT(VkInstance instance,
                                           const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
