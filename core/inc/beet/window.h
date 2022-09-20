@@ -43,6 +43,8 @@ class Window : public Subsystem {
     const char** get_extensions(uint32_t& extensionCount);
     void create_surface(VkInstance& instance, VkSurfaceKHR& surface);
 
+    vec2i get_framebuffer_size();
+
    protected:
     void setup_callbacks();
 

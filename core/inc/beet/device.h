@@ -12,14 +12,12 @@
 
 namespace beet {
 class Engine;
-}
+struct QueueFamilyIndices;
+struct SwapChainSupportDetails;
+}  // namespace beet
 
-struct QueueFamilyIndices {
-    std::optional<uint32_t> graphicsFamily;
-    std::optional<uint32_t> presentFamily;
-
-    bool is_complete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
-};
+const std::vector<const char*> BEET_VK_VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
+const std::vector<const char*> BEET_VK_DEVICE_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 namespace beet {
 class Device : public Subsystem {
@@ -38,6 +36,7 @@ class Device : public Subsystem {
     void create_surface();
     void pick_physical_device();
     void create_logical_device();
+    void create_swap_chain();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -45,7 +44,12 @@ class Device : public Subsystem {
     bool check_validation_layer_support();
     void populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& createInformation);
     bool is_device_suitable(VkPhysicalDevice device);
+    bool check_device_extension_support(VkPhysicalDevice device);
     QueueFamilyIndices find_queue_families(VkPhysicalDevice device);
+    SwapChainSupportDetails query_swap_chain_support(VkPhysicalDevice device);
+    VkSurfaceFormatKHR choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& availablePresentModes);
+    VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
 
    private:
     VkInstance m_instance;
@@ -55,6 +59,10 @@ class Device : public Subsystem {
     VkQueue m_graphicsQueue;
     VkSurfaceKHR m_surface;
     VkQueue m_presentQueue;
+    VkSwapchainKHR m_swapChain;
+    std::vector<VkImage> m_swapChainImages;
+    VkFormat m_swapChainImageFormat;
+    VkExtent2D m_swapChainExtent;
 
    private:
     Engine& m_engine;
@@ -62,8 +70,18 @@ class Device : public Subsystem {
 }  // namespace beet
 
 namespace beet {
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
 
-const std::vector<const char*> validationLayers = {"VK_LAYER_KHRONOS_validation"};
+    bool is_complete() { return graphicsFamily.has_value() && presentFamily.has_value(); }
+};
+
+struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
 
 VkResult create_debug_utils_messenger_EXT(VkInstance instance,
                                           const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,

@@ -190,12 +190,20 @@ void Window::set_cursor_hide(bool state) {
 std::shared_ptr<InputManager> Window::get_input_manager() {
     return m_input;
 }
+
 const char** Window::get_extensions(uint32_t& extensionCount) {
     return glfwGetRequiredInstanceExtensions(&extensionCount);
 }
+
 void Window::create_surface(VkInstance& instance, VkSurfaceKHR& surface) {
     BEET_ASSERT_MESSAGE(glfwCreateWindowSurface(instance, m_window, nullptr, &surface) == VK_SUCCESS,
                         "failed to create window surface!");
+}
+
+vec2i Window::get_framebuffer_size() {
+    int width, height;
+    glfwGetFramebufferSize(m_window, &width, &height);
+    return vec2i{width, height};
 }
 
 }  // namespace beet
