@@ -43,6 +43,9 @@ class Device : public Subsystem {
     void create_framebuffers();
     void create_command_pool();
     void create_command_buffer();
+    void create_sync_objects();
+
+    void draw();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -58,6 +61,7 @@ class Device : public Subsystem {
     VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkShaderModule create_shader_module(const std::vector<char>& code);
     void record_command_buffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -77,6 +81,9 @@ class Device : public Subsystem {
     std::vector<VkFramebuffer> m_swapChainFramebuffers;
     VkCommandPool m_commandPool;
     VkCommandBuffer m_commandBuffer;
+    VkSemaphore m_imageAvailableSemaphore;
+    VkSemaphore m_renderFinishedSemaphore;
+    VkFence m_inFlightFence;
 
    private:
     Engine& m_engine;

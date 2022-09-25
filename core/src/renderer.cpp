@@ -1,5 +1,6 @@
 
 #include <beet/assert.h>
+#include <beet/device.h>
 #include <beet/engine.h>
 #include <beet/renderer.h>
 #include <beet/types.h>
