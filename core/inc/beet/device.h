@@ -41,6 +41,8 @@ class Device : public Subsystem {
     void create_graphics_pipeline();
     void create_render_pass();
     void create_framebuffers();
+    void create_command_pool();
+    void create_command_buffer();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -55,7 +57,7 @@ class Device : public Subsystem {
     VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkShaderModule create_shader_module(const std::vector<char>& code);
-
+    void record_command_buffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -73,6 +75,8 @@ class Device : public Subsystem {
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_graphicsPipeline;
     std::vector<VkFramebuffer> m_swapChainFramebuffers;
+    VkCommandPool m_commandPool;
+    VkCommandBuffer m_commandBuffer;
 
    private:
     Engine& m_engine;
