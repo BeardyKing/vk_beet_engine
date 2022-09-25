@@ -67,6 +67,7 @@ class Device : public Subsystem {
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
     std::vector<VkImageView> m_swapChainImageViews;
+    VkPipelineLayout m_pipelineLayout;
 
    private:
     Engine& m_engine;
