@@ -3,6 +3,7 @@
 #include <set>
 
 #include <beet/assert.h>
+#include <beet/asset_loader.h>
 #include <beet/device.h>
 #include <beet/engine.h>
 
@@ -19,6 +20,7 @@ void Device::on_awake() {
     create_logical_device();
     create_swap_chain();
     create_image_views();
+    create_graphics_pipeline();
 }
 
 void Device::on_update(double deltaTime) {}
@@ -42,9 +44,47 @@ void Device::on_destroy() {
     log::debug("Device destroyed");
 }
 
+void Device::create_graphics_pipeline() {
+    std::vector<char> vertCode = AssetLoader::read_file("../res/shaders/simple_shader.vert.spv");
+    std::vector<char> fragCode = AssetLoader::read_file("../res/shaders/simple_shader.frag.spv");
+
+    VkShaderModule vertShaderModule = create_shader_module(vertCode);
+    VkShaderModule fragShaderModule = create_shader_module(fragCode);
+
+    VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
+    vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vertShaderStageInfo.module = vertShaderModule;
+    vertShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
+    fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragShaderStageInfo.module = fragShaderModule;
+    fragShaderStageInfo.pName = "main";
+
+    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+
+    vkDestroyShaderModule(m_device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(m_device, vertShaderModule, nullptr);
+}
+
+VkShaderModule Device::create_shader_module(const std::vector<char>& code) {
+    VkShaderModuleCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.codeSize = code.size();
+    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+
+    VkShaderModule shaderModule;
+    VkResult shaderResult = vkCreateShaderModule(m_device, &createInfo, nullptr, &shaderModule);
+    BEET_ASSERT_MESSAGE(shaderResult == VK_SUCCESS, "failed to create shader module!")
+
+    return shaderModule;
+}
+
 void Device::create_instance() {
-    BEET_ASSERT_MESSAGE(ENABLED_VALIDATION_LAYERS && check_validation_layer_support(),
-                        "validation layers requested, but not available!");
+    bool validationResult = (ENABLED_VALIDATION_LAYERS && check_validation_layer_support());
+    BEET_ASSERT_MESSAGE(validationResult, "validation layers requested, but not available!");
 
     VkApplicationInfo appInformation{};
     appInformation.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -75,8 +115,8 @@ void Device::create_instance() {
         createInformation.pNext = nullptr;
     }
 
-    VkResult result = vkCreateInstance(&createInformation, nullptr, &m_instance);
-    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "failed to create instance!")
+    VkResult instanceResult = vkCreateInstance(&createInformation, nullptr, &m_instance);
+    BEET_ASSERT_MESSAGE(instanceResult == VK_SUCCESS, "failed to create instance!")
 }
 
 QueueFamilyIndices Device::find_queue_families(VkPhysicalDevice device) {
@@ -199,8 +239,8 @@ void Device::create_logical_device() {
         createInformation.enabledLayerCount = 0;
     }
 
-    BEET_ASSERT_MESSAGE(vkCreateDevice(m_physicalDevice, &createInformation, nullptr, &m_device) == VK_SUCCESS,
-                        "failed to create logical device!")
+    VkResult deviceResult = vkCreateDevice(m_physicalDevice, &createInformation, nullptr, &m_device);
+    BEET_ASSERT_MESSAGE(deviceResult == VK_SUCCESS, "failed to create logical device!")
 
     vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
@@ -228,9 +268,9 @@ void Device::setup_debug_messenger() {
     VkDebugUtilsMessengerCreateInfoEXT createInformation;
     populate_debug_messenger_create_info(createInformation);
 
-    BEET_ASSERT_MESSAGE(
-        create_debug_utils_messenger_EXT(m_instance, &createInformation, nullptr, &m_debugMessenger) == VK_SUCCESS,
-        "failed to set up debug messenger!")
+    VkResult debuggerResult =
+        create_debug_utils_messenger_EXT(m_instance, &createInformation, nullptr, &m_debugMessenger);
+    BEET_ASSERT_MESSAGE(debuggerResult == VK_SUCCESS, "failed to set up debug messenger!")
 }
 
 void Device::populate_debug_messenger_create_info(VkDebugUtilsMessengerCreateInfoEXT& createInformation) {
@@ -378,8 +418,8 @@ void Device::create_swap_chain() {
 
     createInformation.oldSwapchain = VK_NULL_HANDLE;
 
-    BEET_ASSERT_MESSAGE(vkCreateSwapchainKHR(m_device, &createInformation, nullptr, &m_swapChain) == VK_SUCCESS,
-                        "failed to create swap chain!");
+    VkResult swapchainResult = vkCreateSwapchainKHR(m_device, &createInformation, nullptr, &m_swapChain);
+    BEET_ASSERT_MESSAGE(swapchainResult == VK_SUCCESS, "failed to create swap chain!");
 
     vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
     m_swapChainImages.resize(imageCount);
@@ -406,9 +446,8 @@ void Device::create_image_views() {
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
 
-        BEET_ASSERT_MESSAGE(
-            (vkCreateImageView(m_device, &createInfo, nullptr, &m_swapChainImageViews[i]) == VK_SUCCESS),
-            "failed to create image views!");
+        VkResult imageViewResult = vkCreateImageView(m_device, &createInfo, nullptr, &m_swapChainImageViews[i]);
+        BEET_ASSERT_MESSAGE(imageViewResult == VK_SUCCESS, "failed to create image views!");
     }
 }
 

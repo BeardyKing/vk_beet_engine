@@ -196,8 +196,8 @@ const char** Window::get_extensions(uint32_t& extensionCount) {
 }
 
 void Window::create_surface(VkInstance& instance, VkSurfaceKHR& surface) {
-    BEET_ASSERT_MESSAGE(glfwCreateWindowSurface(instance, m_window, nullptr, &surface) == VK_SUCCESS,
-                        "failed to create window surface!");
+    VkResult windowResult = glfwCreateWindowSurface(instance, m_window, nullptr, &surface);
+    BEET_ASSERT_MESSAGE(windowResult == VK_SUCCESS, "failed to create window surface!");
 }
 
 vec2i Window::get_framebuffer_size() {

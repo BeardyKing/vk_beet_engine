@@ -38,6 +38,7 @@ class Device : public Subsystem {
     void create_logical_device();
     void create_swap_chain();
     void create_image_views();
+    void create_graphics_pipeline();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -51,6 +52,7 @@ class Device : public Subsystem {
     VkSurfaceFormatKHR choose_swap_surface_format(const std::vector<VkSurfaceFormatKHR>& availableFormats);
     VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
+    VkShaderModule create_shader_module(const std::vector<char>& code);
 
    private:
     VkInstance m_instance;
