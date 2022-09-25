@@ -39,6 +39,7 @@ class Device : public Subsystem {
     void create_swap_chain();
     void create_image_views();
     void create_graphics_pipeline();
+    void create_render_pass();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -54,6 +55,7 @@ class Device : public Subsystem {
     VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkShaderModule create_shader_module(const std::vector<char>& code);
 
+
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -67,7 +69,9 @@ class Device : public Subsystem {
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
     std::vector<VkImageView> m_swapChainImageViews;
+    VkRenderPass m_renderPass;
     VkPipelineLayout m_pipelineLayout;
+    VkPipeline m_graphicsPipeline;
 
    private:
     Engine& m_engine;
