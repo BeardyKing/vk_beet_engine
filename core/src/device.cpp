@@ -22,12 +22,17 @@ void Device::on_awake() {
     create_image_views();
     create_render_pass();
     create_graphics_pipeline();
+    create_framebuffers();
 }
 
 void Device::on_update(double deltaTime) {}
 void Device::on_late_update() {}
 
 void Device::on_destroy() {
+    for (auto framebuffer : m_swapChainFramebuffers) {
+        vkDestroyFramebuffer(m_device, framebuffer, nullptr);
+    }
+
     vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
     vkDestroyRenderPass(m_device, m_renderPass, nullptr);
@@ -47,6 +52,27 @@ void Device::on_destroy() {
     vkDestroyInstance(m_instance, nullptr);
 
     log::debug("Device destroyed");
+}
+
+void Device::create_framebuffers() {
+    m_swapChainFramebuffers.resize(m_swapChainImageViews.size());
+
+    for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
+        VkImageView attachments[] = {m_swapChainImageViews[i]};
+
+        VkFramebufferCreateInfo framebufferInfo{};
+        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+        framebufferInfo.renderPass = m_renderPass;
+        framebufferInfo.attachmentCount = 1;
+        framebufferInfo.pAttachments = attachments;
+        framebufferInfo.width = m_swapChainExtent.width;
+        framebufferInfo.height = m_swapChainExtent.height;
+        framebufferInfo.layers = 1;
+
+        VkResult framebufferResult =
+            vkCreateFramebuffer(m_device, &framebufferInfo, nullptr, &m_swapChainFramebuffers[i]);
+        BEET_ASSERT_MESSAGE(framebufferResult == VK_SUCCESS, "failed to create framebuffer!");
+    }
 }
 
 void Device::create_render_pass() {

@@ -40,6 +40,7 @@ class Device : public Subsystem {
     void create_image_views();
     void create_graphics_pipeline();
     void create_render_pass();
+    void create_framebuffers();
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -54,7 +55,6 @@ class Device : public Subsystem {
     VkPresentModeKHR choose_swap_present_mode(const std::vector<VkPresentModeKHR>& availablePresentModes);
     VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkShaderModule create_shader_module(const std::vector<char>& code);
-
 
    private:
     VkInstance m_instance;
@@ -72,6 +72,7 @@ class Device : public Subsystem {
     VkRenderPass m_renderPass;
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_graphicsPipeline;
+    std::vector<VkFramebuffer> m_swapChainFramebuffers;
 
    private:
     Engine& m_engine;
