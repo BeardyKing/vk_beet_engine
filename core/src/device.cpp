@@ -37,6 +37,8 @@ void Device::on_late_update() {}
 void Device::on_destroy() {
     vkDeviceWaitIdle(m_device);
 
+    cleanup_swap_chain();
+
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
@@ -44,19 +46,11 @@ void Device::on_destroy() {
     }
 
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
-    for (auto framebuffer : m_swapChainFramebuffers) {
-        vkDestroyFramebuffer(m_device, framebuffer, nullptr);
-    }
 
     vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
     vkDestroyRenderPass(m_device, m_renderPass, nullptr);
 
-    for (auto imageView : m_swapChainImageViews) {
-        vkDestroyImageView(m_device, imageView, nullptr);
-    }
-
-    vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
     vkDestroyDevice(m_device, nullptr);
 
     if (ENABLED_VALIDATION_LAYERS) {
@@ -69,13 +63,49 @@ void Device::on_destroy() {
     log::debug("Device destroyed");
 }
 
+void Device::recreate_swap_chain() {
+    vkDeviceWaitIdle(m_device);
+
+    cleanup_swap_chain();
+
+    create_swap_chain();
+    create_image_views();
+    create_framebuffers();
+}
+
+void Device::cleanup_swap_chain() {
+    for (size_t i = 0; i < m_swapChainFramebuffers.size(); i++) {
+        vkDestroyFramebuffer(m_device, m_swapChainFramebuffers[i], nullptr);
+    }
+
+    for (size_t i = 0; i < m_swapChainImageViews.size(); i++) {
+        vkDestroyImageView(m_device, m_swapChainImageViews[i], nullptr);
+    }
+
+    vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
+}
+
 void Device::draw() {
+    if (glm::isnan((float)m_engine.get_window_module().lock()->get_window_aspect_ratio())) {
+        return;
+    }
+
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
     uint32_t imageIndex;
-    vkAcquireNextImageKHR(m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE,
-                          &imageIndex);
+    VkResult swapChainStatus = vkAcquireNextImageKHR(
+        m_device, m_swapChain, UINT64_MAX, m_imageAvailableSemaphores[m_currentFrame], VK_NULL_HANDLE, &imageIndex);
+
+    // TODO MOVE THIS TO ON RESIZE
+    if (swapChainStatus == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreate_swap_chain();
+        return;
+    } else if (swapChainStatus != VK_SUCCESS && swapChainStatus != VK_SUBOPTIMAL_KHR) {
+        BEET_ASSERT_MESSAGE(BEET_FALSE, "failed to acquire swap chain image!");
+    }
+
+    vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
     vkResetCommandBuffer(m_commandBuffers[m_currentFrame], /*VkCommandBufferResetFlagBits*/ 0);
     record_command_buffer(m_commandBuffers[m_currentFrame], imageIndex);
@@ -111,7 +141,14 @@ void Device::draw() {
 
     presentInfo.pImageIndices = &imageIndex;
 
-    vkQueuePresentKHR(m_presentQueue, &presentInfo);
+    VkResult presentResult = vkQueuePresentKHR(m_presentQueue, &presentInfo);
+
+    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
+        m_framebufferResized = false;
+        recreate_swap_chain();
+    } else if (presentResult != VK_SUCCESS) {
+        BEET_ASSERT_MESSAGE(BEET_FALSE, "failed to present swap chain image!");
+    }
 
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }

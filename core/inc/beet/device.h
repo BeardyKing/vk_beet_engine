@@ -31,6 +31,9 @@ class Device : public Subsystem {
     void on_late_update() override;
     void on_destroy() override;
 
+    void window_resized() { m_framebufferResized = true; }
+    void recreate_swap_chain();
+
    private:
     void create_instance();
     void setup_debug_messenger();
@@ -48,6 +51,7 @@ class Device : public Subsystem {
 
     void draw();
 
+
    private:
     std::vector<const char*> get_required_extensions();
 
@@ -62,6 +66,7 @@ class Device : public Subsystem {
     VkExtent2D choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabilities);
     VkShaderModule create_shader_module(const std::vector<char>& code);
     void record_command_buffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void cleanup_swap_chain();
 
    private:
     VkInstance m_instance;
@@ -86,6 +91,7 @@ class Device : public Subsystem {
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
     uint32_t m_currentFrame = 0;
+    bool m_framebufferResized{false};
 
    private:
     Engine& m_engine;

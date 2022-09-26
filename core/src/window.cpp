@@ -21,7 +21,6 @@ Window::Window(int width, int height, const std::string& title, Engine& engine)
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
 
@@ -38,7 +37,6 @@ void Window::on_awake() {
         glfwSetInputMode(m_window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
     glfwSwapInterval(1);
     setup_callbacks();
-    // TODO VK RESIZE
 }
 
 void Window::window_size_callback(GLFWwindow* window, int width, int height) {
@@ -46,7 +44,9 @@ void Window::window_size_callback(GLFWwindow* window, int width, int height) {
     vec2i size{width, height};
     self->m_width = size.x;
     self->m_height = size.y;
-    // TODO VK RESIZE
+//    self->m_engine.get_device_module().lock()->window_resized();
+    self->m_engine.get_device_module().lock()->recreate_swap_chain();
+
 }
 
 bool Window::is_open() {
