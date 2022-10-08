@@ -47,6 +47,7 @@ class Device : public Subsystem {
     void create_render_pass();
     void create_framebuffers();
     void create_command_pool();
+    void create_vertex_buffer();
     void create_command_buffer();
     void create_sync_objects();
 
@@ -67,35 +68,47 @@ class Device : public Subsystem {
     VkShaderModule create_shader_module(const std::vector<char>& code);
     void record_command_buffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void cleanup_swap_chain();
+    uint32_t find_Memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
+    VkSurfaceKHR m_surface;
+
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
+
     VkQueue m_graphicsQueue;
-    VkSurfaceKHR m_surface;
     VkQueue m_presentQueue;
+
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
     VkFormat m_swapChainImageFormat;
     VkExtent2D m_swapChainExtent;
     std::vector<VkImageView> m_swapChainImageViews;
+    std::vector<VkFramebuffer> m_swapChainFramebuffers;
+
     VkRenderPass m_renderPass;
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_graphicsPipeline;
-    std::vector<VkFramebuffer> m_swapChainFramebuffers;
+
     VkCommandPool m_commandPool;
+
+    VkBuffer m_vertexBuffer;
+    VkDeviceMemory m_vertexBufferMemory;
+
     std::vector<VkCommandBuffer> m_commandBuffers;
+
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
     uint32_t m_currentFrame = 0;
+
     bool m_framebufferResized{false};
 
-    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                          {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                          {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+    const std::vector<Vertex> m_vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                            {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+                                            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
 
    private:
     Engine& m_engine;
