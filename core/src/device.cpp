@@ -7,6 +7,7 @@
 #include <beet/device.h>
 #include <beet/engine.h>
 
+
 namespace beet {
 
 Device::Device(beet::Engine& engine) : m_engine(engine) {}
@@ -62,6 +63,7 @@ void Device::on_destroy() {
 
     log::debug("Device destroyed");
 }
+
 
 void Device::recreate_swap_chain() {
     vkDeviceWaitIdle(m_device);
@@ -336,6 +338,15 @@ void Device::create_graphics_pipeline() {
     vertexInputInfo.pVertexBindingDescriptions = nullptr;  // Optional
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
     vertexInputInfo.pVertexAttributeDescriptions = nullptr;  // Optional
+
+    auto bindingDescription = Vertex::get_binding_description();
+    auto attributeDescriptions = Vertex::get_attribute_descriptions();
+
+    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(attributeDescriptions.size());
+    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

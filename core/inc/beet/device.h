@@ -6,6 +6,7 @@
 
 #include <beet/log.h>
 #include <beet/subsystem.h>
+#include <beet/vertex.h>
 
 #include <optional>
 #include <string>
@@ -51,7 +52,6 @@ class Device : public Subsystem {
 
     void draw();
 
-
    private:
     std::vector<const char*> get_required_extensions();
 
@@ -93,12 +93,17 @@ class Device : public Subsystem {
     uint32_t m_currentFrame = 0;
     bool m_framebufferResized{false};
 
+    const std::vector<Vertex> vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                          {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+                                          {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+
    private:
     Engine& m_engine;
 };
 }  // namespace beet
 
 namespace beet {
+
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
