@@ -1,11 +1,12 @@
-#include <algorithm>
-#include <limits>
-#include <set>
+#include <beet/device.h>
 
 #include <beet/assert.h>
 #include <beet/asset_loader.h>
-#include <beet/device.h>
 #include <beet/engine.h>
+
+#include <algorithm>
+#include <limits>
+#include <set>
 
 namespace beet {
 
@@ -158,36 +159,92 @@ void Device::draw() {
 }
 
 void Device::create_vertex_buffer() {
+    VkDeviceSize bufferSize = sizeof(m_vertices[0]) * m_vertices.size();
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    create_buffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                  VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
+                  stagingBufferMemory);
+
+    void* data;
+    vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, m_vertices.data(), (size_t)bufferSize);
+    vkUnmapMemory(m_device, stagingBufferMemory);
+
+    create_buffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, m_vertexBuffer, m_vertexBufferMemory);
+
+    copy_buffer(stagingBuffer, m_vertexBuffer, bufferSize);
+
+    vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+    vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+}
+
+void Device::create_buffer(VkDeviceSize size,
+                           VkBufferUsageFlags usage,
+                           VkMemoryPropertyFlags properties,
+                           VkBuffer& buffer,
+                           VkDeviceMemory& bufferMemory) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = sizeof(m_vertices[0]) * m_vertices.size();
-    bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VkResult bufferResult = vkCreateBuffer(m_device, &bufferInfo, nullptr, &m_vertexBuffer);
+    VkResult bufferResult = vkCreateBuffer(m_device, &bufferInfo, nullptr, &buffer);
     BEET_ASSERT_MESSAGE(bufferResult == VK_SUCCESS, "failed to create vertex buffer!");
 
     VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(m_device, m_vertexBuffer, &memRequirements);
+    vkGetBufferMemoryRequirements(m_device, buffer, &memRequirements);
 
     VkMemoryAllocateInfo allocInfo{};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = find_Memory_type(
-        memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    allocInfo.memoryTypeIndex = find_memory_type(memRequirements.memoryTypeBits, properties);
 
-    VkResult allocationResult = vkAllocateMemory(m_device, &allocInfo, nullptr, &m_vertexBufferMemory);
+    VkResult allocationResult = vkAllocateMemory(m_device, &allocInfo, nullptr, &bufferMemory);
     BEET_ASSERT_MESSAGE(allocationResult == VK_SUCCESS, "failed to allocate vertex buffer memory!")
 
-    vkBindBufferMemory(m_device, m_vertexBuffer, m_vertexBufferMemory, 0);
-
-    void* data;
-    vkMapMemory(m_device, m_vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-    memcpy(data, m_vertices.data(), (size_t)bufferInfo.size);
-    vkUnmapMemory(m_device, m_vertexBufferMemory);
+    vkBindBufferMemory(m_device, buffer, bufferMemory, 0);
 }
 
-uint32_t Device::find_Memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+void Device::copy_buffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = m_commandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(m_device, &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    VkBufferCopy copyRegion{};
+    copyRegion.srcOffset = 0;
+    copyRegion.dstOffset = 0;
+    copyRegion.size = size;
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(m_graphicsQueue);
+
+    vkFreeCommandBuffers(m_device, m_commandPool, 1, &commandBuffer);
+}
+
+uint32_t Device::find_memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
 

@@ -68,7 +68,14 @@ class Device : public Subsystem {
     VkShaderModule create_shader_module(const std::vector<char>& code);
     void record_command_buffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
     void cleanup_swap_chain();
-    uint32_t find_Memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    uint32_t find_memory_type(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    void create_buffer(VkDeviceSize size,
+                       VkBufferUsageFlags usage,
+                       VkMemoryPropertyFlags properties,
+                       VkBuffer& buffer,
+                       VkDeviceMemory& bufferMemory);
+
+    void copy_buffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
    private:
     VkInstance m_instance;
