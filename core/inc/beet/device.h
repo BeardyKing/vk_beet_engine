@@ -48,6 +48,7 @@ class Device : public Subsystem {
     void create_framebuffers();
     void create_command_pool();
     void create_vertex_buffer();
+    void create_index_buffer();
     void create_command_buffer();
     void create_sync_objects();
 
@@ -103,6 +104,8 @@ class Device : public Subsystem {
 
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
+    VkBuffer m_indexBuffer;
+    VkDeviceMemory m_indexBufferMemory;
 
     std::vector<VkCommandBuffer> m_commandBuffers;
 
@@ -113,9 +116,11 @@ class Device : public Subsystem {
 
     bool m_framebufferResized{false};
 
-    const std::vector<Vertex> m_vertices = {{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-                                            {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                            {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+    const std::vector<uint16_t> m_indices = {0, 1, 2, 2, 3, 0};
+    const std::vector<Vertex> m_vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                            {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                                            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                                            {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
    private:
     Engine& m_engine;
