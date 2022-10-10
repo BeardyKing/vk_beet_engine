@@ -15,6 +15,11 @@ namespace beet {
 class Engine;
 struct QueueFamilyIndices;
 struct SwapChainSupportDetails;
+struct UniformBufferObject {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 proj;
+};
 }  // namespace beet
 
 const std::vector<const char*> BEET_VK_VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
@@ -43,16 +48,18 @@ class Device : public Subsystem {
     void create_logical_device();
     void create_swap_chain();
     void create_image_views();
-    void create_graphics_pipeline();
     void create_render_pass();
+    void create_descriptor_set();
+    void create_graphics_pipeline();
     void create_framebuffers();
     void create_command_pool();
     void create_vertex_buffer();
     void create_index_buffer();
+    void create_uniform_buffers();
     void create_command_buffer();
     void create_sync_objects();
 
-    void draw();
+    void draw(double deltaTime);
 
    private:
     std::vector<const char*> get_required_extensions();
@@ -77,7 +84,7 @@ class Device : public Subsystem {
                        VkDeviceMemory& bufferMemory);
 
     void copy_buffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
+    void update_uniform_buffer(uint32_t currentFrame, double deltaTime);
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -97,6 +104,7 @@ class Device : public Subsystem {
     std::vector<VkFramebuffer> m_swapChainFramebuffers;
 
     VkRenderPass m_renderPass;
+    VkDescriptorSetLayout m_descriptorSetLayout;
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_graphicsPipeline;
 
@@ -106,6 +114,9 @@ class Device : public Subsystem {
     VkDeviceMemory m_vertexBufferMemory;
     VkBuffer m_indexBuffer;
     VkDeviceMemory m_indexBufferMemory;
+
+    std::vector<VkBuffer> m_uniformBuffers;
+    std::vector<VkDeviceMemory> m_uniformBuffersMemory;
 
     std::vector<VkCommandBuffer> m_commandBuffers;
 

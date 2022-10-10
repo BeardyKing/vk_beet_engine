@@ -22,17 +22,19 @@ void Device::on_awake() {
     create_swap_chain();
     create_image_views();
     create_render_pass();
+    create_descriptor_set();
     create_graphics_pipeline();
     create_framebuffers();
     create_command_pool();
     create_vertex_buffer();
     create_index_buffer();
+    create_uniform_buffers();
     create_command_buffer();
     create_sync_objects();
 }
 
 void Device::on_update(double deltaTime) {
-    draw();
+    draw(deltaTime);
 }
 
 void Device::on_late_update() {}
@@ -42,6 +44,11 @@ void Device::on_destroy() {
 
     cleanup_swap_chain();
 
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        vkDestroyBuffer(m_device, m_uniformBuffers[i], nullptr);
+        vkFreeMemory(m_device, m_uniformBuffersMemory[i], nullptr);
+    }
+    vkDestroyDescriptorSetLayout(m_device, m_descriptorSetLayout, nullptr);
     vkDestroyPipeline(m_device, m_graphicsPipeline, nullptr);
     vkDestroyPipelineLayout(m_device, m_pipelineLayout, nullptr);
     vkDestroyRenderPass(m_device, m_renderPass, nullptr);
@@ -94,7 +101,7 @@ void Device::cleanup_swap_chain() {
     vkDestroySwapchainKHR(m_device, m_swapChain, nullptr);
 }
 
-void Device::draw() {
+void Device::draw(double deltaTime) {
     if (glm::isnan((float)m_engine.get_window_module().lock()->get_window_aspect_ratio())) {
         return;
     }
@@ -113,6 +120,8 @@ void Device::draw() {
     } else if (swapChainStatus != VK_SUCCESS && swapChainStatus != VK_SUBOPTIMAL_KHR) {
         BEET_ASSERT_MESSAGE(BEET_FALSE, "failed to acquire swap chain image!");
     }
+
+    update_uniform_buffer(m_currentFrame, deltaTime);
 
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
@@ -162,6 +171,20 @@ void Device::draw() {
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+void Device::update_uniform_buffer(uint32_t currentFrame, double deltaTime) {
+    UniformBufferObject ubo{};
+    ubo.model = glm::rotate(glm::mat4(1.0f), (float)deltaTime * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+    ubo.proj =
+        glm::perspective(glm::radians(45.0f), m_swapChainExtent.width / (float)m_swapChainExtent.height, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    void* data;
+    vkMapMemory(m_device, m_uniformBuffersMemory[currentFrame], 0, sizeof(ubo), 0, &data);
+    memcpy(data, &ubo, sizeof(ubo));
+    vkUnmapMemory(m_device, m_uniformBuffersMemory[currentFrame]);
+}
+
 void Device::create_vertex_buffer() {
     VkDeviceSize bufferSize = sizeof(m_vertices[0]) * m_vertices.size();
 
@@ -206,6 +229,19 @@ void Device::create_index_buffer() {
 
     vkDestroyBuffer(m_device, stagingBuffer, nullptr);
     vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+}
+
+void Device::create_uniform_buffers() {
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    m_uniformBuffersMemory.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        create_buffer(bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, m_uniformBuffers[i],
+                      m_uniformBuffersMemory[i]);
+    }
 }
 
 void Device::create_buffer(VkDeviceSize size,
@@ -445,6 +481,23 @@ void Device::create_render_pass() {
     VkResult renderPassResult = vkCreateRenderPass(m_device, &renderPassInfo, nullptr, &m_renderPass);
     BEET_ASSERT_MESSAGE(renderPassResult == VK_SUCCESS, "failed to create render pass!");
 };
+
+void Device::create_descriptor_set() {
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = 0;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    VkDescriptorSetLayoutCreateInfo layoutInfo{};
+    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.bindingCount = 1;
+    layoutInfo.pBindings = &uboLayoutBinding;
+
+    VkResult descriptorResult = vkCreateDescriptorSetLayout(m_device, &layoutInfo, nullptr, &m_descriptorSetLayout);
+    BEET_ASSERT_MESSAGE(descriptorResult == VK_SUCCESS, "failed to create descriptor set layout!");
+}
 
 void Device::create_graphics_pipeline() {
     std::vector<char> vertCode = AssetLoader::read_file("../res/shaders/simple_shader.vert.spv");
