@@ -49,13 +49,15 @@ class Device : public Subsystem {
     void create_swap_chain();
     void create_image_views();
     void create_render_pass();
-    void create_descriptor_set();
+    void create_descriptor_set_layout();
     void create_graphics_pipeline();
     void create_framebuffers();
     void create_command_pool();
     void create_vertex_buffer();
     void create_index_buffer();
     void create_uniform_buffers();
+    void create_descriptor_pool();
+    void create_descriptor_sets();
     void create_command_buffer();
     void create_sync_objects();
 
@@ -117,6 +119,9 @@ class Device : public Subsystem {
 
     std::vector<VkBuffer> m_uniformBuffers;
     std::vector<VkDeviceMemory> m_uniformBuffersMemory;
+
+    VkDescriptorPool m_descriptorPool;
+    std::vector<VkDescriptorSet> m_descriptorSets;
 
     std::vector<VkCommandBuffer> m_commandBuffers;
 
