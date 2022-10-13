@@ -23,6 +23,7 @@ Window::Window(int width, int height, const std::string& title, Engine& engine)
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
+    glfwSetWindowSizeLimits(m_window, 128, 128, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     BEET_ASSERT_MESSAGE(m_window, "Failed to create GLFW window");
     log::debug("GLFW initialized");
@@ -44,9 +45,7 @@ void Window::window_size_callback(GLFWwindow* window, int width, int height) {
     vec2i size{width, height};
     self->m_width = size.x;
     self->m_height = size.y;
-//    self->m_engine.get_device_module().lock()->window_resized();
     self->m_engine.get_device_module().lock()->recreate_swap_chain();
-
 }
 
 bool Window::is_open() {
@@ -200,10 +199,20 @@ void Window::create_surface(VkInstance& instance, VkSurfaceKHR& surface) {
     BEET_ASSERT_MESSAGE(windowResult == VK_SUCCESS, "failed to create window surface!");
 }
 
-vec2i Window::get_framebuffer_size() {
-    int width, height;
+void Window::get_framebuffer_size(int& width, int& height) {
     glfwGetFramebufferSize(m_window, &width, &height);
-    return vec2i{width, height};
+    m_width = width;
+    m_height = height;
+}
+
+void Window::get_framebuffer_size(vec2i& size) {
+    glfwGetFramebufferSize(m_window, &size.x, &size.y);
+    m_width = size.x;
+    m_height = size.y;
+}
+
+void Window::wait_events() {
+    glfwWaitEvents();
 }
 
 }  // namespace beet

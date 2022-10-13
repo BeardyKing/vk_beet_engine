@@ -97,6 +97,13 @@ void Device::on_destroy() {
 }
 
 void Device::recreate_swap_chain() {
+    auto window = m_engine.get_window_module().lock();
+    vec2i size{0};
+    while (!size.x || !size.y) {
+        window->get_framebuffer_size(size);
+        window->wait_events();
+    }
+
     vkDeviceWaitIdle(m_device);
 
     cleanup_swap_chain();
@@ -119,10 +126,6 @@ void Device::cleanup_swap_chain() {
 }
 
 void Device::draw(double deltaTime) {
-    if (glm::isnan((float)m_engine.get_window_module().lock()->get_window_aspect_ratio())) {
-        return;
-    }
-
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
@@ -1207,7 +1210,7 @@ VkExtent2D Device::choose_swap_extent(const VkSurfaceCapabilitiesKHR& capabiliti
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
     } else {
-        vec2i size = m_engine.get_window_module().lock()->get_framebuffer_size();
+        vec2i size = m_engine.get_window_module().lock()->get_window_size();
 
         VkExtent2D actualExtent = {static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)};
 
