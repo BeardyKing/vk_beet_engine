@@ -53,6 +53,7 @@ class Device : public Subsystem {
     void create_graphics_pipeline();
     void create_framebuffers();
     void create_command_pool();
+    void create_texture_image();
     void create_vertex_buffer();
     void create_index_buffer();
     void create_uniform_buffers();
@@ -87,6 +88,18 @@ class Device : public Subsystem {
 
     void copy_buffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
     void update_uniform_buffer(uint32_t currentFrame, double deltaTime);
+    void create_image(uint32_t width,
+                      uint32_t height,
+                      VkFormat format,
+                      VkImageTiling tiling,
+                      VkImageUsageFlags usage,
+                      VkMemoryPropertyFlags properties,
+                      VkImage& image,
+                      VkDeviceMemory& imageMemory);
+    VkCommandBuffer begin_single_time_commands();
+    void end_single_time_commands(VkCommandBuffer commandBuffer);
+    void transition_image_layout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+    void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
    private:
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
@@ -111,6 +124,9 @@ class Device : public Subsystem {
     VkPipeline m_graphicsPipeline;
 
     VkCommandPool m_commandPool;
+
+    VkImage m_textureImage;
+    VkDeviceMemory m_textureImageMemory;
 
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
