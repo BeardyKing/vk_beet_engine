@@ -53,6 +53,7 @@ class Device : public Subsystem {
     void create_graphics_pipeline();
     void create_framebuffers();
     void create_command_pool();
+    void create_depth_resources();
     void create_texture_image();
     void create_texture_image_view();
     void create_texture_sampler();
@@ -61,7 +62,7 @@ class Device : public Subsystem {
     void create_uniform_buffers();
     void create_descriptor_pool();
     void create_descriptor_sets();
-    void create_command_buffer();
+    void create_command_buffers();
     void create_sync_objects();
 
     void draw(double deltaTime);
@@ -102,7 +103,12 @@ class Device : public Subsystem {
     void end_single_time_commands(VkCommandBuffer commandBuffer);
     void transition_image_layout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
     void copy_buffer_to_image(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
-    VkImageView create_image_view(VkImage image, VkFormat format);
+    VkImageView create_image_view(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+    VkFormat find_supported_format(const std::vector<VkFormat>& candidates,
+                                   VkImageTiling tiling,
+                                   VkFormatFeatureFlags features);
+    VkFormat find_depth_format();
+    bool has_stencil_component(VkFormat format);
 
    private:
     VkInstance m_instance;
@@ -129,6 +135,10 @@ class Device : public Subsystem {
 
     VkCommandPool m_commandPool;
 
+    VkImage m_depthImage;
+    VkDeviceMemory m_depthImageMemory;
+    VkImageView m_depthImageView;
+
     VkImage m_textureImage;
     VkDeviceMemory m_textureImageMemory;
     VkImageView m_textureImageView;
@@ -154,11 +164,16 @@ class Device : public Subsystem {
 
     bool m_framebufferResized{false};
 
-    const std::vector<uint16_t> m_indices = {0, 1, 2, 2, 3, 0};
-    const std::vector<Vertex> m_vertices = {{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-                                            {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-                                            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-                                            {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
+    const std::vector<uint16_t> m_indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+    const std::vector<Vertex> m_vertices = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                                            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                                            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                                            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+
+                                            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+                                            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+                                            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+                                            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
 
    private:
     Engine& m_engine;
