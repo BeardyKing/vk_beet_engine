@@ -29,6 +29,7 @@ include_directories(beet
         third/glfw/include/
         third/glm/
         third/stb/
+        third/assimp/include/
         )
 
 target_link_libraries(beet
@@ -39,6 +40,7 @@ target_link_libraries(beet
         imgui
         imguizmo
         Vulkan::Vulkan
+        assimp
         )
 
 

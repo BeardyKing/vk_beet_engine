@@ -19,6 +19,15 @@ set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
 
 add_subdirectory(glm)
 
+#======= ASSIMP =======#
+
+set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_STATIC_LIBS ON CACHE BOOL "" FORCE)
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(assimp)
+
 #======== STB =========#
 
 project(stb)
@@ -56,4 +65,7 @@ add_library(imguizmo ${IMGUIZMO_SOURCES})
 target_link_libraries(imguizmo PRIVATE imgui)
 target_include_directories(imguizmo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imguizmo)
 target_include_directories(${PROJECT_NAME} PRIVATE ${IMGUIZMO_SOURCES})
+
+
+
 
