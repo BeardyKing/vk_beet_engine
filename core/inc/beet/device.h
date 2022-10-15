@@ -21,6 +21,8 @@ struct UniformBufferObject {
     glm::mat4 proj;
 };
 }  // namespace beet
+const std::string MODEL_PATH = "../res/misc/viking_room.obj";
+const std::string TEXTURE_PATH = "../res/textures/viking_room.png";
 
 const std::vector<const char*> BEET_VK_VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
 const std::vector<const char*> BEET_VK_DEVICE_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
@@ -56,6 +58,7 @@ class Device : public Subsystem {
     void create_depth_resources();
     void create_texture_image();
     void create_texture_image_view();
+    void load_model();
     void create_texture_sampler();
     void create_vertex_buffer();
     void create_index_buffer();
@@ -144,6 +147,8 @@ class Device : public Subsystem {
     VkImageView m_textureImageView;
     VkSampler m_textureSampler;
 
+    std::vector<Vertex> m_vertices;
+    std::vector<uint32_t> m_indices;
     VkBuffer m_vertexBuffer;
     VkDeviceMemory m_vertexBufferMemory;
     VkBuffer m_indexBuffer;
@@ -164,16 +169,16 @@ class Device : public Subsystem {
 
     bool m_framebufferResized{false};
 
-    const std::vector<uint16_t> m_indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
-    const std::vector<Vertex> m_vertices = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-                                            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-                                            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-                                            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
-
-                                            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
-                                            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
-                                            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
-                                            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
+//    const std::vector<uint16_t> m_indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
+//    const std::vector<Vertex> m_vertices = {{{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+//                                            {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+//                                            {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+//                                            {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}},
+//
+//                                            {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f}},
+//                                            {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {1.0f, 0.0f}},
+//                                            {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {1.0f, 1.0f}},
+//                                            {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {0.0f, 1.0f}}};
 
    private:
     Engine& m_engine;
