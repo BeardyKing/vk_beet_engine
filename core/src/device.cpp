@@ -205,7 +205,7 @@ void Device::draw(double deltaTime) {
 
 void Device::update_uniform_buffer(uint32_t currentFrame, double deltaTime) {
     static float timePassed{};
-    timePassed += (float)deltaTime;
+    timePassed += (float)deltaTime * 0.25f;
 
     UniformBufferObject ubo{};
     ubo.model = glm::rotate(glm::mat4(1.0f), timePassed * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));

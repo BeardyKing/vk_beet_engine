@@ -30,6 +30,7 @@ include_directories(beet
         third/glm/
         third/stb/
         third/assimp/include/
+        third/VulkanMemoryAllocator/include/
         )
 
 target_link_libraries(beet
@@ -41,6 +42,7 @@ target_link_libraries(beet
         imguizmo
         Vulkan::Vulkan
         assimp
+        vma
         )
 
 

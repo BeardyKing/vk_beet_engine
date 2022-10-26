@@ -66,6 +66,9 @@ target_link_libraries(imguizmo PRIVATE imgui)
 target_include_directories(imguizmo PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/imguizmo)
 target_include_directories(${PROJECT_NAME} PRIVATE ${IMGUIZMO_SOURCES})
 
+#======== VMA =========#
 
+project(vma)
+add_library(vma INTERFACE)
 
 
