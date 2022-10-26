@@ -1,6 +1,6 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#include <beet/gfx/i_device.h>
 
 #include <beet/asset_loader.h>
 #include <beet/log.h>
@@ -25,6 +25,8 @@ class Renderer : public Subsystem {
 
    private:
     Engine& m_engine;
+   private:
+    std::shared_ptr<gfx::IDevice> m_device;
 };
 
 }  // namespace beet
