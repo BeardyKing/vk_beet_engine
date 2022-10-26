@@ -22,3 +22,6 @@
 [submodule "third/VulkanMemoryAllocator"]
 	path = third/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
+[submodule "third/vk-bootstrap"]
+	path = third/vk-bootstrap
+	url = https://github.com/charles-lunarg/vk-bootstrap

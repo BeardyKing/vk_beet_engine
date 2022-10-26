@@ -71,4 +71,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${IMGUIZMO_SOURCES})
 project(vma)
 add_library(vma INTERFACE)
 
+#==== VK_BOOTSTRAP ====#
+
+add_subdirectory(vk-bootstrap)
 
