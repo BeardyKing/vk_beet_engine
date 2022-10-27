@@ -1,5 +1,4 @@
 #pragma once
-#include <beet/gfx/i_device.h>
 #include <vector>
 
 #include <vulkan/vulkan.h>
@@ -8,28 +7,24 @@ class Engine;
 }  // namespace beet
 
 namespace beet::gfx {
-class VulkanDevice : public IDevice {
+class VulkanDevice {
    public:
-    explicit VulkanDevice(Engine& engine);
+    VulkanDevice(Engine& engine);
     ~VulkanDevice();
 
-    bool init() override;
+    VkDevice get_device() { return m_device; }
+    VkPhysicalDevice get_physical_device() { return m_chosenGPU; }
+    VkSurfaceKHR get_surface() { return m_surface; }
 
    private:
     void init_vulkan();
-    void init_swapchain();
 
    private:
     VkInstance m_instance;
-    VkDebugUtilsMessengerEXT m_debug_messenger;
+    VkDebugUtilsMessengerEXT m_debugMessenger;
     VkPhysicalDevice m_chosenGPU;
     VkDevice m_device;
     VkSurfaceKHR m_surface;
-
-    VkSwapchainKHR m_swapchain;
-    VkFormat m_swapchainImageFormat;
-    std::vector<VkImage> m_swapchainImages;
-    std::vector<VkImageView> m_swapchainImageViews;
 
    private:
     Engine& m_engine;
