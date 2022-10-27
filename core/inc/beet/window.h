@@ -30,9 +30,9 @@ class Window : public Subsystem {
     void calculate_delta_time();
     double get_delta_time();
 
-    int get_window_width() { return m_width; };
-    int get_window_height() { return m_height; };
-    vec2i get_window_size() { return vec2i(m_width, m_height); };
+    uint32_t get_window_width() { return m_width; };
+    uint32_t get_window_height() { return m_height; };
+    vec2u get_window_size() { return vec2u{m_width, m_height}; };
     float get_window_aspect_ratio() { return (float)m_width / (float)m_height; }
 
     void toggle_fullscreen();
@@ -60,8 +60,8 @@ class Window : public Subsystem {
     void toggle_fullscreen_internal();
 
    protected:
-    int m_width;
-    int m_height;
+    uint32_t m_width;
+    uint32_t m_height;
     std::string m_title;
     bool m_fullscreen{false};
     bool keysDown = false;

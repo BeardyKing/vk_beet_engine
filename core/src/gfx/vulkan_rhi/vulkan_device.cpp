@@ -8,53 +8,67 @@
 #include <iostream>
 
 namespace beet::gfx {
-VulkanDevice::VulkanDevice(Engine& engine) : m_engine(&engine) {}
+VulkanDevice::VulkanDevice(Engine& engine) : m_engine(engine) {}
+
+VulkanDevice::~VulkanDevice() {
+    vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+
+    for (auto& m_swapchainImageView : m_swapchainImageViews) {
+        vkDestroyImageView(m_device, m_swapchainImageView, nullptr);
+    }
+
+    vkDestroyDevice(m_device, nullptr);
+    vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
+    vkb::destroy_debug_utils_messenger(m_instance, m_debug_messenger);
+    vkDestroyInstance(m_instance, nullptr);
+}
 
 bool VulkanDevice::init() {
-    vkb::InstanceBuilder builder;
-    auto inst_ret = builder.set_app_name("Example Vulkan Application")
-                        .request_validation_layers()
-                        .use_default_debug_messenger()
-                        .build();
-    if (!inst_ret) {
-        std::cerr << "Failed to create Vulkan instance. Error: " << inst_ret.error().message() << "\n";
-        return false;
-    }
-    vkb::Instance vkb_inst = inst_ret.value();
-    VkSurfaceKHR surface;
-    m_engine->get_window_module().lock()->create_surface(vkb_inst.instance, surface);
-    vkb::PhysicalDeviceSelector selector{vkb_inst};
-    auto phys_ret = selector.set_surface(surface)
-                        .set_minimum_version(1, 1)  // require a vulkan 1.1 capable device
-                        .require_dedicated_transfer_queue()
-                        .select();
-    if (!phys_ret) {
-        std::cerr << "Failed to select Vulkan Physical Device. Error: " << phys_ret.error().message() << "\n";
-        return false;
-    }
+    init_vulkan();
+    init_swapchain();
 
-    vkb::DeviceBuilder device_builder{phys_ret.value()};
-    // automatically propagate needed data from instance & physical device
-    auto dev_ret = device_builder.build();
-    if (!dev_ret) {
-        std::cerr << "Failed to create Vulkan device. Error: " << dev_ret.error().message() << "\n";
-        return false;
-    }
-    vkb::Device vkb_device = dev_ret.value();
-
-    // Get the VkDevice handle used in the rest of a vulkan application
-    VkDevice device = vkb_device.device;
-
-    // Get the graphics queue with a helper function
-    auto graphics_queue_ret = vkb_device.get_queue(vkb::QueueType::graphics);
-    if (!graphics_queue_ret) {
-        std::cerr << "Failed to get graphics queue. Error: " << graphics_queue_ret.error().message() << "\n";
-        return false;
-    }
-    VkQueue graphics_queue = graphics_queue_ret.value();
-
-    log::info("vk-bootstrap example");
-    // Turned 400-500 lines of boilerplate into less than fifty.
     return true;
 }
+
+void VulkanDevice::init_vulkan() {
+    vkb::InstanceBuilder builder;
+
+    auto inst_ret = builder.set_app_name("Beet Engine")
+                        .request_validation_layers(true)
+                        .require_api_version(1, 1, 0)
+                        .use_default_debug_messenger()  // TODO setup callback to work with stb log
+                        .build();
+
+    vkb::Instance vkb_inst = inst_ret.value();
+    m_instance = vkb_inst.instance;
+    m_debug_messenger = vkb_inst.debug_messenger;
+
+    m_engine.get_window_module().lock()->create_surface(m_instance, m_surface);
+
+    vkb::PhysicalDeviceSelector selector{vkb_inst};
+    vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 1).set_surface(m_surface).select().value();
+
+    vkb::DeviceBuilder deviceBuilder{physicalDevice};
+    vkb::Device vkbDevice = deviceBuilder.build().value();
+
+    m_device = vkbDevice.device;
+    m_chosenGPU = physicalDevice.physical_device;
+}
+
+void VulkanDevice::init_swapchain() {
+    const vec2u extent = m_engine.get_window_module().lock()->get_window_size();
+
+    vkb::SwapchainBuilder swapchainBuilder{m_chosenGPU, m_device, m_surface};
+    vkb::Swapchain vkbSwapchain = swapchainBuilder.use_default_format_selection()
+                                      .set_desired_present_mode(VK_PRESENT_MODE_FIFO_KHR)
+                                      .set_desired_extent(extent.x, extent.y)
+                                      .build()
+                                      .value();
+
+    m_swapchain = vkbSwapchain.swapchain;
+    m_swapchainImages = vkbSwapchain.get_images().value();
+    m_swapchainImageViews = vkbSwapchain.get_image_views().value();
+    m_swapchainImageFormat = vkbSwapchain.image_format;
+}
+
 }  // namespace beet::gfx
