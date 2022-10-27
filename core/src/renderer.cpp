@@ -9,6 +9,7 @@ namespace beet {
 Renderer::Renderer(Engine& engine) : m_engine(engine) {
     m_device = std::make_shared<gfx::VulkanDevice>(m_engine);
     m_swapchain = std::make_shared<gfx::VulkanSwapchain>(*this);
+    m_commandBuffer = std::make_shared<gfx::VulkanCommandBuffer>(*this);
 }
 
 void Renderer::on_awake() {}

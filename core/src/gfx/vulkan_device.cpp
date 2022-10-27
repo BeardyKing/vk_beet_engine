@@ -42,5 +42,8 @@ void VulkanDevice::init_vulkan() {
 
     m_device = vkbDevice.device;
     m_chosenGPU = physicalDevice.physical_device;
+
+    m_graphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
+    m_graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 }
 }  // namespace beet::gfx

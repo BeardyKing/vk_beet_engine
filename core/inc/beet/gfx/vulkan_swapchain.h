@@ -15,13 +15,15 @@ class VulkanSwapchain {
 
    private:
     void init_swapchain();
-    Renderer& m_renderer;
 
    private:
     VkSwapchainKHR m_swapchain;
     VkFormat m_swapchainImageFormat;
     std::vector<VkImage> m_swapchainImages;
     std::vector<VkImageView> m_swapchainImageViews;
+
+   private:
+    Renderer& m_renderer;
 };
 
 }  // namespace beet::gfx
