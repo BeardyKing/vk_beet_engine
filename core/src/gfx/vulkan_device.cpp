@@ -17,6 +17,7 @@ VulkanDevice::~VulkanDevice() {
     vkDestroySurfaceKHR(m_instance, m_surface, nullptr);
     vkb::destroy_debug_utils_messenger(m_instance, m_debugMessenger);
     vkDestroyInstance(m_instance, nullptr);
+    log::debug("VulkanDevice destroyed");
 }
 
 void VulkanDevice::init_vulkan() {

@@ -4,6 +4,7 @@
 #include <VkBootstrap.h>
 
 #include <beet/engine.h>
+#include <beet/log.h>
 #include <beet/renderer.h>
 
 namespace beet::gfx {
@@ -19,6 +20,8 @@ VulkanSwapchain::~VulkanSwapchain() {
     for (auto& m_swapchainImageView : m_swapchainImageViews) {
         vkDestroyImageView(device, m_swapchainImageView, nullptr);
     }
+
+    log::debug("VulkanSwapchain destroyed");
 }
 
 void VulkanSwapchain::init_swapchain() {

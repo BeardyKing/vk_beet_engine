@@ -13,6 +13,10 @@ class VulkanSwapchain {
     VulkanSwapchain(Renderer& renderer);
     ~VulkanSwapchain();
 
+    VkFormat get_swapchain_image_format() { return m_swapchainImageFormat; }
+    std::vector<VkImage> get_swapchain_images() { return m_swapchainImages; }
+    std::vector<VkImageView> get_swapchain_image_views() { return m_swapchainImageViews; }
+
    private:
     void init_swapchain();
 

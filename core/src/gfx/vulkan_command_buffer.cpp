@@ -13,6 +13,8 @@ VulkanCommandBuffer::~VulkanCommandBuffer() {
     auto device = m_renderer.get_device();
 
     vkDestroyCommandPool(device, m_commandPool, nullptr);
+
+    log::debug("VulkanCommandBuffer destroyed");
 }
 
 void VulkanCommandBuffer::init_commands() {
