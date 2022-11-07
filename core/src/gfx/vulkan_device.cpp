@@ -1,14 +1,17 @@
 #include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_initializers.h>
 
+#include <beet/assert.h>
 #include <beet/engine.h>
 #include <beet/log.h>
+#include <beet/renderer.h>
 
 #include <VkBootstrap.h>
 
 #include <iostream>
 
 namespace beet::gfx {
-VulkanDevice::VulkanDevice(Engine& engine) : m_engine(engine) {
+VulkanDevice::VulkanDevice(Renderer& renderer) : m_renderer(renderer) {
     init_vulkan();
 }
 
@@ -33,7 +36,7 @@ void VulkanDevice::init_vulkan() {
     m_instance = vkb_inst.instance;
     m_debugMessenger = vkb_inst.debug_messenger;
 
-    m_engine.get_window_module().lock()->create_surface(m_instance, m_surface);
+    m_renderer.get_engine().get_window_module().lock()->create_surface(m_instance, m_surface);
 
     vkb::PhysicalDeviceSelector selector{vkb_inst};
     vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 1).set_surface(m_surface).select().value();
@@ -47,4 +50,28 @@ void VulkanDevice::init_vulkan() {
     m_graphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
     m_graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 }
+
+// TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
+void VulkanDevice::submit(VkCommandBuffer cmd) {
+    auto presentSemaphore = m_renderer.get_present_semaphore();
+    auto renderSemaphore = m_renderer.get_render_semaphore();
+    auto renderFence = m_renderer.get_render_fence();
+    auto graphicsQueue = m_renderer.get_graphics_queue();
+
+    VkSubmitInfo submit = gfx::init::submit_info(&cmd);
+
+    VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    submit.pWaitDstStageMask = &waitStage;
+    submit.waitSemaphoreCount = 1;
+    submit.pWaitSemaphores = &presentSemaphore;
+    submit.signalSemaphoreCount = 1;
+    submit.pSignalSemaphores = &renderSemaphore;
+
+    {
+        auto result = vkQueueSubmit(graphicsQueue, 1, &submit, renderFence);
+        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to submit to graphics queue");
+    }
+}
+// TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
+
 }  // namespace beet::gfx

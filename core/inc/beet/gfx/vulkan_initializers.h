@@ -8,4 +8,11 @@ VkCommandPoolCreateInfo command_pool_create_info(uint32_t queueFamilyIndex, VkCo
 VkCommandBufferAllocateInfo command_buffer_allocate_info(VkCommandPool pool,
                                                          uint32_t count = 1,
                                                          VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+VkSubmitInfo submit_info(VkCommandBuffer* cmd);
+VkPresentInfoKHR present_info();
+
+VkRenderPassBeginInfo renderpass_begin_info(VkRenderPass renderPass,
+                                            VkExtent2D windowExtent,
+                                            VkFramebuffer framebuffer);
 }  // namespace beet::gfx::init

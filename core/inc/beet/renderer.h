@@ -33,10 +33,18 @@ class Renderer : public Subsystem {
     VkSurfaceKHR get_surface() { return m_device->get_surface(); }
     VkQueue get_queue() { return m_device->get_queue(); }
     uint32_t get_queue_family() { return m_device->get_queue_family(); }
+    VkQueue get_graphics_queue() { return m_device->get_queue(); }
 
+    VkSwapchainKHR get_swapchain() { return m_swapchain->get_swapchain(); }
     VkFormat get_swapchain_image_format() { return m_swapchain->get_swapchain_image_format(); }
     std::vector<VkImage> get_swapchain_images() { return m_swapchain->get_swapchain_images(); }
     std::vector<VkImageView> get_swapchain_image_views() { return m_swapchain->get_swapchain_image_views(); }
+    uint32_t get_swapchain_index() { return m_swapchain->get_swapchain_index(); }
+
+    void render_sync() { m_renderPass->sync(); }
+    VkSemaphore get_present_semaphore() { return m_renderPass->get_present_semaphore(); }
+    VkSemaphore get_render_semaphore() { return m_renderPass->get_render_semaphore(); }
+    VkFence get_render_fence() { return m_renderPass->get_render_fence(); }
 
    private:
     Engine& m_engine;
@@ -46,6 +54,9 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanSwapchain> m_swapchain;
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
+
+   private:  // tmp
+    float m_timePassed{0};
 };
 
 }  // namespace beet

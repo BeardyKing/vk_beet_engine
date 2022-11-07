@@ -3,13 +3,13 @@
 
 #include <vulkan/vulkan.h>
 namespace beet {
-class Engine;
+class Renderer;
 }  // namespace beet
 
 namespace beet::gfx {
 class VulkanDevice {
    public:
-    VulkanDevice(Engine& engine);
+    VulkanDevice(Renderer& renderer);
     ~VulkanDevice();
 
     VkDevice get_device() { return m_device; }
@@ -17,6 +17,10 @@ class VulkanDevice {
     VkSurfaceKHR get_surface() { return m_surface; }
     VkQueue get_queue() { return m_graphicsQueue; }
     uint32_t get_queue_family() { return m_graphicsQueueFamily; }
+
+    // TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
+    void submit(VkCommandBuffer cmd);
+    // TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
 
    private:
     void init_vulkan();
@@ -32,6 +36,6 @@ class VulkanDevice {
     uint32_t m_graphicsQueueFamily;
 
    private:
-    Engine& m_engine;
+    Renderer& m_renderer;
 };
 }  // namespace beet::gfx

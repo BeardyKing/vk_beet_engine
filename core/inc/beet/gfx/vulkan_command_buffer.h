@@ -13,6 +13,13 @@ class VulkanCommandBuffer {
     VulkanCommandBuffer(Renderer& renderer);
     ~VulkanCommandBuffer();
 
+    void reset();
+
+    void begin_recording();
+    void end_recording();
+
+    VkCommandBuffer get_main_command_buffer() { return m_mainCommandBuffer; };
+
    private:
     void init_commands();
 

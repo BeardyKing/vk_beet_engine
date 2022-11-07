@@ -1,8 +1,10 @@
 #include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_swapchain.h>
 
 #include <VkBootstrap.h>
 
+#include <beet/assert.h>
 #include <beet/engine.h>
 #include <beet/log.h>
 #include <beet/renderer.h>
@@ -42,4 +44,28 @@ void VulkanSwapchain::init_swapchain() {
     m_swapchainImageViews = vkbSwapchain.get_image_views().value();
     m_swapchainImageFormat = vkbSwapchain.image_format;
 }
+
+void VulkanSwapchain::acquire_next_image() {
+    auto device = m_renderer.get_device();
+    auto semaphore = m_renderer.get_present_semaphore();
+
+    auto result = vkAcquireNextImageKHR(device, m_swapchain, 1000000000, semaphore, nullptr, &m_swapchainIndex);
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to get next swapchain image");
+}
+
+void VulkanSwapchain::present() {
+    auto graphicsQueue = m_renderer.get_graphics_queue();
+    auto renderSemaphore = m_renderer.get_render_semaphore();
+
+    VkPresentInfoKHR presentInfo = init::present_info();
+    presentInfo.pSwapchains = &m_swapchain;
+    presentInfo.swapchainCount = 1;
+    presentInfo.pWaitSemaphores = &renderSemaphore;
+    presentInfo.waitSemaphoreCount = 1;
+    presentInfo.pImageIndices = &m_swapchainIndex;
+
+    auto result = vkQueuePresentKHR(graphicsQueue, &presentInfo);
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to present image");
+}
+
 }  // namespace beet::gfx

@@ -1,5 +1,6 @@
 #include <beet/assert.h>
 #include <beet/engine.h>
+#include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_render_pass.h>
 #include <beet/log.h>
 #include <beet/renderer.h>
@@ -9,10 +10,16 @@ namespace beet::gfx {
 VulkanRenderPass::VulkanRenderPass(Renderer& renderer) : m_renderer(renderer) {
     init_default_renderpass();
     init_framebuffers();
+    init_sync_structures();
 }
 
 VulkanRenderPass::~VulkanRenderPass() {
     auto device = m_renderer.get_device();
+    vkDeviceWaitIdle(device);
+
+    vkDestroyFence(device, m_renderFence, nullptr);
+    vkDestroySemaphore(device, m_renderSemaphore, nullptr);
+    vkDestroySemaphore(device, m_presentSemaphore, nullptr);
 
     vkDestroyRenderPass(device, m_renderPass, nullptr);
 
@@ -81,6 +88,52 @@ void VulkanRenderPass::init_framebuffers() {
         auto result = vkCreateFramebuffer(device, &fb_info, nullptr, &m_framebuffers[i]);
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create framebuffers");
     }
+}
+void VulkanRenderPass::init_sync_structures() {
+    auto device = m_renderer.get_device();
+
+    VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.pNext = nullptr;
+    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    {
+        auto result = vkCreateFence(device, &fenceCreateInfo, nullptr, &m_renderFence);
+        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create fence");
+    }
+
+    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    semaphoreCreateInfo.pNext = nullptr;
+    semaphoreCreateInfo.flags = 0;
+    {
+        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_presentSemaphore);
+        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create present semaphore");
+    }
+    {
+        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_renderSemaphore);
+        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create render semaphore");
+    }
+}
+void VulkanRenderPass::sync() {
+    auto device = m_renderer.get_device();
+
+    {
+        auto result = vkWaitForFences(device, 1, &m_renderFence, true, 1000000000);
+        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed wait for render fence");
+    }
+    {
+        auto result = vkResetFences(device, 1, &m_renderFence);
+        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed reset render fence");
+    }
+}
+VkRenderPassBeginInfo VulkanRenderPass::create_begin_info() {
+    auto idx = m_renderer.get_swapchain_index();
+    const vec2u size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
+    VkExtent2D extent{size.x, size.y};
+
+    auto info = init::renderpass_begin_info(m_renderPass, extent, m_framebuffers[idx]);
+
+    return info;
 }
 
 }  // namespace beet::gfx

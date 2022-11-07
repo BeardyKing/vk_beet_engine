@@ -35,5 +35,24 @@ void VulkanCommandBuffer::init_commands() {
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to allocate command buffers");
     }
 }
+void VulkanCommandBuffer::reset() {
+    auto result = vkResetCommandBuffer(m_mainCommandBuffer, 0);
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to reset command buffer");
+}
+
+void VulkanCommandBuffer::begin_recording() {
+    VkCommandBufferBeginInfo cmdBeginInfo = {};
+    cmdBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    cmdBeginInfo.pNext = nullptr;
+    cmdBeginInfo.pInheritanceInfo = nullptr;
+    cmdBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    auto result = vkBeginCommandBuffer(m_mainCommandBuffer, &cmdBeginInfo);
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to begin command buffer recording");
+}
+
+void VulkanCommandBuffer::end_recording() {
+    auto result = vkEndCommandBuffer(m_mainCommandBuffer);
+}
 
 }  // namespace beet::gfx
