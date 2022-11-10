@@ -11,6 +11,7 @@ Renderer::Renderer(Engine& engine) : m_engine(engine) {
     m_swapchain = std::make_shared<gfx::VulkanSwapchain>(*this);
     m_commandBuffer = std::make_shared<gfx::VulkanCommandBuffer>(*this);
     m_renderPass = std::make_shared<gfx::VulkanRenderPass>(*this);
+    m_commandQueue = std::make_shared<gfx::VulkanCommandQueue>(*this);
 }
 
 void Renderer::on_awake() {}
@@ -37,10 +38,9 @@ void Renderer::on_update(double deltaTime) {
         }
         m_commandBuffer->end_recording();
     }
+    m_commandQueue->add_command(cmd);
 
-    // TODO: MOVE THIS TO COMMAND QUEUE
-    m_device->submit(cmd);
-    // TODO: MOVE THIS TO COMMAND QUEUE
+    m_commandQueue->submit();
     m_swapchain->present();
 
     m_timePassed += (float)deltaTime;

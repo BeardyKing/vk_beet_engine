@@ -1,6 +1,7 @@
 #pragma once
 
 #include <beet/gfx/vulkan_command_buffer.h>
+#include <beet/gfx/vulkan_command_queue.h>
 #include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_render_pass.h>
 #include <beet/gfx/vulkan_swapchain.h>
@@ -54,6 +55,7 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanSwapchain> m_swapchain;
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
+    std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
 
    private:  // tmp
     float m_timePassed{0};

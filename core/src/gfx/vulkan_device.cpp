@@ -51,27 +51,5 @@ void VulkanDevice::init_vulkan() {
     m_graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 }
 
-// TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
-void VulkanDevice::submit(VkCommandBuffer cmd) {
-    auto presentSemaphore = m_renderer.get_present_semaphore();
-    auto renderSemaphore = m_renderer.get_render_semaphore();
-    auto renderFence = m_renderer.get_render_fence();
-    auto graphicsQueue = m_renderer.get_graphics_queue();
-
-    VkSubmitInfo submit = gfx::init::submit_info(&cmd);
-
-    VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    submit.pWaitDstStageMask = &waitStage;
-    submit.waitSemaphoreCount = 1;
-    submit.pWaitSemaphores = &presentSemaphore;
-    submit.signalSemaphoreCount = 1;
-    submit.pSignalSemaphores = &renderSemaphore;
-
-    {
-        auto result = vkQueueSubmit(graphicsQueue, 1, &submit, renderFence);
-        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to submit to graphics queue");
-    }
-}
-// TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
 
 }  // namespace beet::gfx

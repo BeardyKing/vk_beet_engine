@@ -18,10 +18,6 @@ class VulkanDevice {
     VkQueue get_queue() { return m_graphicsQueue; }
     uint32_t get_queue_family() { return m_graphicsQueueFamily; }
 
-    // TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
-    void submit(VkCommandBuffer cmd);
-    // TODO: MOVE THIS TO COMMAND QUEUE WITH EMPLACE BACK COMMANDS
-
    private:
     void init_vulkan();
 
