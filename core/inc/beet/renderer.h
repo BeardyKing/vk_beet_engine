@@ -3,7 +3,9 @@
 #include <beet/gfx/vulkan_command_buffer.h>
 #include <beet/gfx/vulkan_command_queue.h>
 #include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_pipeline.h>
 #include <beet/gfx/vulkan_render_pass.h>
+#include <beet/gfx/vulkan_shader_modules.h>
 #include <beet/gfx/vulkan_swapchain.h>
 
 #include <beet/asset_loader.h>
@@ -46,6 +48,7 @@ class Renderer : public Subsystem {
     VkSemaphore get_present_semaphore() { return m_renderPass->get_present_semaphore(); }
     VkSemaphore get_render_semaphore() { return m_renderPass->get_render_semaphore(); }
     VkFence get_render_fence() { return m_renderPass->get_render_fence(); }
+    VkRenderPass get_render_pass() { return m_renderPass->get_render_pass(); }
 
    private:
     Engine& m_engine;
@@ -56,6 +59,7 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
+    std::shared_ptr<gfx::VulkanPipeline> m_pipeline;
 
    private:  // tmp
     float m_timePassed{0};

@@ -21,6 +21,7 @@ class VulkanRenderPass {
     VkFence get_render_fence() { return m_renderFence; }
 
     VkRenderPassBeginInfo create_begin_info();
+    VkRenderPass get_render_pass() { return m_renderPass; }
 
    private:
     void init_default_renderpass();

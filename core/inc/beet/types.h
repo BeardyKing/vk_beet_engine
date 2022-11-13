@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_ENABLE_EXPERIMENTAL
@@ -26,3 +28,7 @@ using vec3d = vec<3, double>;
 using vec4i = vec<4, int>;
 using vec4d = vec<4, double>;
 }  // namespace beet
+
+namespace beet::gfx {
+enum class ShaderType { Vertex, Fragment, LAST };
+}
