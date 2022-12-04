@@ -17,6 +17,7 @@ class VulkanDevice {
     VkSurfaceKHR get_surface() { return m_surface; }
     VkQueue get_queue() { return m_graphicsQueue; }
     uint32_t get_queue_family() { return m_graphicsQueueFamily; }
+    VkInstance get_instance() { return m_instance; }
 
    private:
     void init_vulkan();

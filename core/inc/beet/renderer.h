@@ -1,8 +1,10 @@
 #pragma once
 
+#include <beet/gfx/vulkan_buffer.h>
 #include <beet/gfx/vulkan_command_buffer.h>
 #include <beet/gfx/vulkan_command_queue.h>
 #include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_mesh.h>
 #include <beet/gfx/vulkan_pipeline.h>
 #include <beet/gfx/vulkan_render_pass.h>
 #include <beet/gfx/vulkan_shader_modules.h>
@@ -37,6 +39,7 @@ class Renderer : public Subsystem {
     VkQueue get_queue() { return m_device->get_queue(); }
     uint32_t get_queue_family() { return m_device->get_queue_family(); }
     VkQueue get_graphics_queue() { return m_device->get_queue(); }
+    VkInstance get_instance() { return m_device->get_instance(); }
 
     VkSwapchainKHR get_swapchain() { return m_swapchain->get_swapchain(); }
     VkFormat get_swapchain_image_format() { return m_swapchain->get_swapchain_image_format(); }
@@ -59,8 +62,10 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
-    std::shared_ptr<gfx::VulkanPipeline> m_pipeline_red;
-    std::shared_ptr<gfx::VulkanPipeline> m_pipeline_col;
+    std::shared_ptr<gfx::VulkanBuffer> m_buffer;
+    std::shared_ptr<gfx::VulkanPipeline> m_pipelineMesh;
+
+    gfx::Mesh m_triangle;
 
    private:  // tmp
     float m_timePassed{0};

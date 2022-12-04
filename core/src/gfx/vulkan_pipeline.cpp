@@ -5,6 +5,7 @@
 #include <beet/renderer.h>
 
 #include <beet/gfx/vulkan_initializers.h>
+#include <beet/gfx/vulkan_mesh.h>
 #include <beet/gfx/vulkan_shader_modules.h>
 
 namespace beet::gfx {
@@ -31,7 +32,7 @@ void VulkanPipeline::add_stages(gfx::VulkanShaderModules& shaderModules) {
     }
 }
 
-void VulkanPipeline::build() {
+void VulkanPipeline::build(const VertexInputDescription& vertexDescription) {
     auto renderPass = m_renderer.get_render_pass();
     auto device = m_renderer.get_device();
     auto size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
@@ -44,6 +45,14 @@ void VulkanPipeline::build() {
 
     //===BUILD VERTEX BUFFER===//
     m_vertexInputInfo = init::vertex_input_state_create_info();
+    if (!vertexDescription.attributes.empty()) {
+        m_vertexInputInfo.pVertexAttributeDescriptions = vertexDescription.attributes.data();
+        m_vertexInputInfo.vertexAttributeDescriptionCount = vertexDescription.attributes.size();
+    }
+    if (!vertexDescription.bindings.empty()) {
+        m_vertexInputInfo.pVertexBindingDescriptions = vertexDescription.bindings.data();
+        m_vertexInputInfo.vertexBindingDescriptionCount = vertexDescription.bindings.size();
+    }
 
     //===BUILD ASSEMBLY===//
     m_inputAssembly = init::input_assembly_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);

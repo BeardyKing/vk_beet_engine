@@ -9,7 +9,8 @@ namespace beet {
 class Renderer;
 namespace gfx {
 class VulkanShaderModules;
-}
+struct VertexInputDescription;
+}  // namespace gfx
 }  // namespace beet
 
 namespace beet::gfx {
@@ -19,7 +20,7 @@ class VulkanPipeline {
     ~VulkanPipeline();
 
     void add_stages(gfx::VulkanShaderModules& shaderModules);
-    void build();
+    void build(const VertexInputDescription& vertexDescription);
     VkPipeline get_pipeline() { return m_pipeline; }
 
    private:
