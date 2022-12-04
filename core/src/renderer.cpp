@@ -14,28 +14,47 @@ Renderer::Renderer(Engine& engine) : m_engine(engine) {
     m_commandBuffer = std::make_shared<gfx::VulkanCommandBuffer>(*this);
     m_renderPass = std::make_shared<gfx::VulkanRenderPass>(*this);
     m_commandQueue = std::make_shared<gfx::VulkanCommandQueue>(*this);
-    m_pipeline = std::make_shared<gfx::VulkanPipeline>(*this);
+
+    m_pipeline_red = std::make_shared<gfx::VulkanPipeline>(*this);
+    m_pipeline_col = std::make_shared<gfx::VulkanPipeline>(*this);
 }
 
 void Renderer::on_awake() {
     //  RESOURCES: TODO: REPLACE WITH RESOURCE MANAGER
-    auto vertSrc = AssetLoader::read_file("../res/shaders/triangle_shader.vert.spv");
-    auto fragSrc = AssetLoader::read_file("../res/shaders/triangle_shader.frag.spv");
-    gfx::VulkanShaderModules triangleShader(*this);
-    triangleShader.load(vertSrc, gfx::ShaderType::Vertex);
-    triangleShader.load(fragSrc, gfx::ShaderType::Fragment);
-    //  RESOURCES:
-
-    m_pipeline->add_stages(triangleShader);
-    m_pipeline->build();
+    {
+        //  RESOURCES:    RED TRIANGLE
+        auto triRedVertSrc = AssetLoader::read_file("../res/shaders/triangle_shader.vert.spv");
+        auto triRedFragSrc = AssetLoader::read_file("../res/shaders/triangle_shader.frag.spv");
+        gfx::VulkanShaderModules redTriangleShader(*this);
+        redTriangleShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
+        redTriangleShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
+        m_pipeline_red->add_stages(redTriangleShader);
+        m_pipeline_red->build();
+    }
+    {
+        // RESOURCES: COLOURED TRIANGLE
+        auto triColVertSrc = AssetLoader::read_file("../res/shaders/color_triangle_shader.vert.spv");
+        auto triColFragSrc = AssetLoader::read_file("../res/shaders/color_triangle_shader.frag.spv");
+        gfx::VulkanShaderModules colTriangleShader(*this);
+        colTriangleShader.load(triColVertSrc, gfx::ShaderType::Vertex);
+        colTriangleShader.load(triColFragSrc, gfx::ShaderType::Fragment);
+        m_pipeline_col->add_stages(colTriangleShader);
+        m_pipeline_col->build();
+    }
 }
 
 void Renderer::on_update(double deltaTime) {
+    //  TMP: INPUT CODE
+    const auto input = m_engine.get_window_module().lock()->get_input_manager();
+    if (input->key_pressed(KeyCode::Space)) {
+        m_boundPipeline = !m_boundPipeline;
+    }
+
     VkClearValue clearValue;
     clearValue.color = {{0.5f, 0.092, 0.167f, 1.0f}};
 
     // TODO: re-create swapchain on resize / minimise.
-    
+
     render_sync();
     m_commandBuffer->reset();
     m_swapchain->acquire_next_image();
@@ -51,7 +70,11 @@ void Renderer::on_update(double deltaTime) {
             vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
             {
                 // commands here
-                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline->get_pipeline());
+                if (m_boundPipeline) {
+                    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_col->get_pipeline());
+                } else {
+                    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_red->get_pipeline());
+                }
                 vkCmdDraw(cmd, 3, 1, 0, 0);
             }
             vkCmdEndRenderPass(cmd);

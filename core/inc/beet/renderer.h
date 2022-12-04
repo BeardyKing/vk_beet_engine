@@ -59,10 +59,12 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
-    std::shared_ptr<gfx::VulkanPipeline> m_pipeline;
+    std::shared_ptr<gfx::VulkanPipeline> m_pipeline_red;
+    std::shared_ptr<gfx::VulkanPipeline> m_pipeline_col;
 
    private:  // tmp
     float m_timePassed{0};
+    bool m_boundPipeline{false};
 };
 
 }  // namespace beet

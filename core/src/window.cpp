@@ -67,6 +67,7 @@ void Window::on_update(double deltaTime) {
     calculate_delta_time();
     toggle_fullscreen();
 }
+
 void Window::toggle_fullscreen() {
     if (m_input->key_on_trigger(KeyCode::LeftAlt) && m_input->key_on_trigger(KeyCode::Enter) && !keysDown) {
         toggle_fullscreen_internal();
