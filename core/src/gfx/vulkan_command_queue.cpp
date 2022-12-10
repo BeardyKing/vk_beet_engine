@@ -35,5 +35,8 @@ void VulkanCommandQueue::submit() {
 
     m_commandQueue.clear();
 }
+VulkanCommandQueue::~VulkanCommandQueue() {
+    log::debug("VulkanCommandQueue destroyed");
+}
 
 }  // namespace beet::gfx

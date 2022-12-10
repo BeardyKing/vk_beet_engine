@@ -17,6 +17,7 @@ VulkanPipeline::~VulkanPipeline() {
 
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
+    log::debug("VulkanPipeline destroyed");
 }
 
 void VulkanPipeline::add_stages(gfx::VulkanShaderModules& shaderModules) {
@@ -32,7 +33,8 @@ void VulkanPipeline::add_stages(gfx::VulkanShaderModules& shaderModules) {
     }
 }
 
-void VulkanPipeline::build(const VertexInputDescription& vertexDescription, const VkPushConstantRange& pushConstantRange) {
+void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
+                           const VkPushConstantRange& pushConstantRange) {
     auto renderPass = m_renderer.get_render_pass();
     auto device = m_renderer.get_device();
     auto size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
@@ -41,7 +43,7 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription, cons
     //===BUILD PIPELINE INFO===//
     VkPipelineLayoutCreateInfo pipeline_layout_info = init::pipeline_layout_create_info();
     pipeline_layout_info.pPushConstantRanges = &pushConstantRange;
-    pipeline_layout_info.pushConstantRangeCount = 1; //FIXME:   Only supports 1 stage at this time.
+    pipeline_layout_info.pushConstantRangeCount = 1;  // FIXME:   Only supports 1 stage at this time.
     auto pipelineInfoResult = vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &m_pipelineLayout);
     BEET_ASSERT_MESSAGE(pipelineInfoResult == VK_SUCCESS, "failed to create pipeline")
 
@@ -97,6 +99,10 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription, cons
     colorBlending.attachmentCount = 1;
     colorBlending.pAttachments = &m_colorBlendAttachment;
 
+    //===BUILD DEPTH===//
+    // FIXME:   ONLY SUPPORTING DEPTH COMPARE (UNTIL PARTICLE SYSTEM IMPL)
+    m_depthStencil = init::depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
     //===BUILD PIPELINE===//
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -110,6 +116,7 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription, cons
     pipelineInfo.pRasterizationState = &m_rasterizer;
     pipelineInfo.pMultisampleState = &m_multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDepthStencilState = &m_depthStencil;
     pipelineInfo.layout = m_pipelineLayout;
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;

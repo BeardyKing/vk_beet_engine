@@ -1,13 +1,10 @@
 #pragma once
 
+#include <beet/gfx/types.h>
 #include <beet/gfx/vulkan_buffer.h>
 #include <beet/types.h>
 
 #include <vulkan/vulkan.h>
-
-namespace beet::gfx {
-struct AllocatedBuffer;
-}
 
 namespace beet::gfx {
 struct VertexInputDescription {

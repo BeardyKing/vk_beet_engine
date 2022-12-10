@@ -12,7 +12,7 @@ namespace beet::gfx {
 class VulkanCommandQueue {
    public:
     VulkanCommandQueue(Renderer& renderer);
-    ~VulkanCommandQueue() = default;
+    ~VulkanCommandQueue();
 
     void add_command(VkCommandBuffer cmd);
     void submit();

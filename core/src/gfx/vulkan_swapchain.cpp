@@ -16,8 +16,12 @@ VulkanSwapchain::VulkanSwapchain(Renderer& renderer) : m_renderer(renderer) {
 }
 VulkanSwapchain::~VulkanSwapchain() {
     auto device = m_renderer.get_device();
+    auto allocator = m_renderer.get_allocator();
 
     vkDestroySwapchainKHR(device, m_swapchain, nullptr);
+
+    vkDestroyImageView(device, m_depthImageView, nullptr);
+    vmaDestroyImage(allocator, m_depthImage.image, m_depthImage.allocation);
 
     for (auto& m_swapchainImageView : m_swapchainImageViews) {
         vkDestroyImageView(device, m_swapchainImageView, nullptr);
@@ -43,6 +47,27 @@ void VulkanSwapchain::init_swapchain() {
     m_swapchainImages = vkbSwapchain.get_images().value();
     m_swapchainImageViews = vkbSwapchain.get_image_views().value();
     m_swapchainImageFormat = vkbSwapchain.image_format;
+
+    VkExtent3D depthImageExtent = {extent.x, extent.y, 1};
+    m_depthFormat = VK_FORMAT_D32_SFLOAT;
+
+    VkImageCreateInfo depthImageInfo =
+        init::image_create_info(m_depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, depthImageExtent);
+
+    VmaAllocationCreateInfo depthImageAllocInfo = {};
+    depthImageAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    depthImageAllocInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    auto allocator = m_renderer.get_allocator();
+    auto resultAlloc = vmaCreateImage(allocator, &depthImageInfo, &depthImageAllocInfo, &m_depthImage.image,
+                                      &m_depthImage.allocation, nullptr);
+
+    BEET_ASSERT_MESSAGE(resultAlloc == VK_SUCCESS, "Error: Vulkan - VMA failed to alloc depth image");
+    VkImageViewCreateInfo depthImageViewInfo =
+        init::imageview_create_info(m_depthFormat, m_depthImage.image, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+    auto result = vkCreateImageView(device, &depthImageViewInfo, nullptr, &m_depthImageView);
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to create depth image view");
 }
 
 void VulkanSwapchain::acquire_next_image() {

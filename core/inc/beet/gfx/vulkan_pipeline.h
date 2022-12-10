@@ -3,6 +3,7 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
+#include <beet/gfx/types.h>
 #include <beet/types.h>
 
 namespace beet {
@@ -34,6 +35,7 @@ class VulkanPipeline {
     VkPipelineColorBlendAttachmentState m_colorBlendAttachment;
     VkPipelineMultisampleStateCreateInfo m_multisampling;
     VkPipelineLayout m_pipelineLayout;
+    VkPipelineDepthStencilStateCreateInfo m_depthStencil;
 
    private:
     VkPipeline m_pipeline;

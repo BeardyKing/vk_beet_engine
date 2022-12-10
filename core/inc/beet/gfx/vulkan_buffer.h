@@ -1,7 +1,8 @@
 #pragma once
 
+#include <beet/gfx/types.h>
 #include <beet/types.h>
-//#define VMA_IMPLEMENTATION
+// #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 namespace beet {
 class Renderer;
@@ -20,16 +21,13 @@ class VulkanBuffer {
     void upload_mesh_immediate(Mesh& mesh);
     void destroy_mesh(Mesh& mesh);
 
+    VmaAllocator get_allocator() { return m_allocator; }
+
    private:
     VmaAllocator m_allocator;
 
    private:
     Renderer& m_renderer;
-};
-
-struct AllocatedBuffer {
-    VkBuffer buffer;
-    VmaAllocation allocation;
 };
 
 }  // namespace beet::gfx

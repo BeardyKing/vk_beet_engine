@@ -6,6 +6,7 @@
 #include <vector>
 
 #include <beet/types.h>
+#include <beet/gfx/types.h>
 
 namespace beet {
 class Renderer;

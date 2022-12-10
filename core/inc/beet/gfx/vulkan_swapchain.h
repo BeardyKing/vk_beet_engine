@@ -1,5 +1,7 @@
 #pragma once
 
+#include <beet/gfx/types.h>
+
 #include <vulkan/vulkan.h>
 #include <vector>
 
@@ -17,6 +19,8 @@ class VulkanSwapchain {
     VkFormat get_swapchain_image_format() { return m_swapchainImageFormat; }
     std::vector<VkImage> get_swapchain_images() { return m_swapchainImages; }
     std::vector<VkImageView> get_swapchain_image_views() { return m_swapchainImageViews; }
+    VkImageView get_depth_image_view() { return m_depthImageView; }
+    VkFormat get_depth_format() { return m_depthFormat; }
 
     void acquire_next_image();
     uint32_t get_swapchain_index() { return m_swapchainIndex; }
@@ -31,6 +35,10 @@ class VulkanSwapchain {
     VkFormat m_swapchainImageFormat;
     std::vector<VkImage> m_swapchainImages;
     std::vector<VkImageView> m_swapchainImageViews;
+
+    VkImageView m_depthImageView;
+    AllocatedImage m_depthImage;
+    VkFormat m_depthFormat;
 
    private:
     uint32_t m_swapchainIndex{};

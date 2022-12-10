@@ -45,7 +45,9 @@ class Renderer : public Subsystem {
     VkFormat get_swapchain_image_format() { return m_swapchain->get_swapchain_image_format(); }
     std::vector<VkImage> get_swapchain_images() { return m_swapchain->get_swapchain_images(); }
     std::vector<VkImageView> get_swapchain_image_views() { return m_swapchain->get_swapchain_image_views(); }
+    VkImageView get_depth_image_view() { return m_swapchain->get_depth_image_view(); }
     uint32_t get_swapchain_index() { return m_swapchain->get_swapchain_index(); }
+    VkFormat get_depth_format() { return m_swapchain->get_depth_format(); }
 
     void render_sync() { m_renderPass->sync(); }
     VkSemaphore get_present_semaphore() { return m_renderPass->get_present_semaphore(); }
@@ -53,23 +55,26 @@ class Renderer : public Subsystem {
     VkFence get_render_fence() { return m_renderPass->get_render_fence(); }
     VkRenderPass get_render_pass() { return m_renderPass->get_render_pass(); }
 
+    // TODO: VULKAN BUFFER FUNCTIONS SHOULD PROBABLY BE STATIC.
+    //       UNLESS WE PASS THE BUFFER OBJECT AROUND INSTEAD.
+    VmaAllocator get_allocator() { return m_buffer->get_allocator(); }
+
    private:
     Engine& m_engine;
 
    private:
     std::shared_ptr<gfx::VulkanDevice> m_device;
+    std::shared_ptr<gfx::VulkanBuffer> m_buffer;
     std::shared_ptr<gfx::VulkanSwapchain> m_swapchain;
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
-    std::shared_ptr<gfx::VulkanBuffer> m_buffer;
     std::shared_ptr<gfx::VulkanPipeline> m_pipelineMesh;
 
-    gfx::Mesh m_triangle;
+    gfx::Mesh m_loadedMesh;
 
    private:  // tmp
     float m_timePassed{0};
-    bool m_boundPipeline{false};
 };
 
 }  // namespace beet
