@@ -32,7 +32,7 @@ void VulkanPipeline::add_stages(gfx::VulkanShaderModules& shaderModules) {
     }
 }
 
-void VulkanPipeline::build(const VertexInputDescription& vertexDescription) {
+void VulkanPipeline::build(const VertexInputDescription& vertexDescription, const VkPushConstantRange& pushConstantRange) {
     auto renderPass = m_renderer.get_render_pass();
     auto device = m_renderer.get_device();
     auto size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
@@ -40,6 +40,8 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription) {
 
     //===BUILD PIPELINE INFO===//
     VkPipelineLayoutCreateInfo pipeline_layout_info = init::pipeline_layout_create_info();
+    pipeline_layout_info.pPushConstantRanges = &pushConstantRange;
+    pipeline_layout_info.pushConstantRangeCount = 1; //FIXME:   Only supports 1 stage at this time.
     auto pipelineInfoResult = vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &m_pipelineLayout);
     BEET_ASSERT_MESSAGE(pipelineInfoResult == VK_SUCCESS, "failed to create pipeline")
 

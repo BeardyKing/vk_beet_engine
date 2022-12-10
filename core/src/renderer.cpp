@@ -19,6 +19,12 @@ Renderer::Renderer(Engine& engine) : m_engine(engine) {
     m_pipelineMesh = std::make_shared<gfx::VulkanPipeline>(*this);
 }
 
+// TODO: SHOULD BE MANAGED VIA MATERIAL and or SHADER
+struct MeshPushConstants {
+    glm::vec4 data;
+    glm::mat4 render_matrix;
+};
+
 void Renderer::on_awake() {
     //  RESOURCES: TODO: REPLACE WITH RESOURCE MANAGER
     {
@@ -27,9 +33,9 @@ void Renderer::on_awake() {
         m_triangle.vertices[0].position = {1.f, 1.f, 0.0f};
         m_triangle.vertices[1].position = {-1.f, 1.f, 0.0f};
         m_triangle.vertices[2].position = {0.f, -1.f, 0.0f};
-        m_triangle.vertices[0].color = {0.f, 1.f, 0.0f};
+        m_triangle.vertices[0].color = {1.f, 0.f, 0.0f};
         m_triangle.vertices[1].color = {0.f, 1.f, 0.0f};
-        m_triangle.vertices[2].color = {0.f, 1.f, 0.0f};
+        m_triangle.vertices[2].color = {0.f, 0.f, 1.0f};
 
         //  TODO: UPLOADING MESH DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
         m_buffer->upload_mesh_immediate(m_triangle);
@@ -45,7 +51,13 @@ void Renderer::on_awake() {
             //  PIPELINE
             gfx::VertexInputDescription vertexDescription = gfx::Vertex::get_vertex_description();
             m_pipelineMesh->add_stages(redTriangleShader);
-            m_pipelineMesh->build(vertexDescription);
+
+            VkPushConstantRange pushConstant;
+            pushConstant.offset = 0;
+            pushConstant.size = sizeof(MeshPushConstants);
+            pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+            m_pipelineMesh->build(vertexDescription, pushConstant);
         }
     }
 }
@@ -53,6 +65,7 @@ void Renderer::on_awake() {
 void Renderer::on_update(double deltaTime) {
     VkClearValue clearValue;
     clearValue.color = {{0.5f, 0.092, 0.167f, 1.0f}};
+    m_timePassed += deltaTime;
 
     // TODO: re-create swapchain on resize / minimise.
 
@@ -73,6 +86,19 @@ void Renderer::on_update(double deltaTime) {
                 vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineMesh->get_pipeline());
                 VkDeviceSize offset = 0;
                 vkCmdBindVertexBuffers(cmd, 0, 1, &m_triangle.vertexBuffer.buffer, &offset);
+
+                glm::vec3 camPos = {0.f, 0.f, -2.f};
+                glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+                glm::mat4 projection = glm::perspective(glm::radians(90.f), 1700.f / 900.f, 0.1f, 200.0f);
+                projection[1][1] *= -1;
+                glm::mat4 model = glm::rotate(glm::mat4{1.0f}, glm::radians(m_timePassed * 20.0f), glm::vec3(0, 1, 0));
+                glm::mat4 mesh_matrix = projection * view * model;
+
+                MeshPushConstants tmpConstants{};
+                tmpConstants.render_matrix = mesh_matrix;
+                vkCmdPushConstants(cmd, m_pipelineMesh->get_pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                                   sizeof(MeshPushConstants), &tmpConstants);
+
                 vkCmdDraw(cmd, m_triangle.vertices.size(), 1, 0, 0);
             }
             vkCmdEndRenderPass(cmd);
