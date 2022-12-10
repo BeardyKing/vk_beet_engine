@@ -26,29 +26,21 @@ struct MeshPushConstants {
 };
 
 void Renderer::on_awake() {
-    //  RESOURCES: TODO: REPLACE WITH RESOURCE MANAGER
+    // RES:TODO:    REPLACE WITH RESOURCE MANAGER
     {
-        //  RES:MESH
-        m_triangle.vertices.resize(3);
-        m_triangle.vertices[0].position = {1.f, 1.f, 0.0f};
-        m_triangle.vertices[1].position = {-1.f, 1.f, 0.0f};
-        m_triangle.vertices[2].position = {0.f, -1.f, 0.0f};
-        m_triangle.vertices[0].color = {1.f, 0.f, 0.0f};
-        m_triangle.vertices[1].color = {0.f, 1.f, 0.0f};
-        m_triangle.vertices[2].color = {0.f, 0.f, 1.0f};
-
-        //  TODO: UPLOADING MESH DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
+        // RES:MESH:TODO:   UPLOADING MESH DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
+        m_triangle = AssetLoader::load_model("../res/misc/viking_room.obj");
         m_buffer->upload_mesh_immediate(m_triangle);
     }
     {
-        //  RES:SHADER
+        // RES:SHADER
         auto triRedVertSrc = AssetLoader::read_file("../res/shaders/tri_mesh_shader.vert.spv");
         auto triRedFragSrc = AssetLoader::read_file("../res/shaders/tri_mesh_shader.frag.spv");
         gfx::VulkanShaderModules redTriangleShader(*this);
         redTriangleShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
         redTriangleShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
         {
-            //  PIPELINE
+            // PIPELINE
             gfx::VertexInputDescription vertexDescription = gfx::Vertex::get_vertex_description();
             m_pipelineMesh->add_stages(redTriangleShader);
 
@@ -65,9 +57,9 @@ void Renderer::on_awake() {
 void Renderer::on_update(double deltaTime) {
     VkClearValue clearValue;
     clearValue.color = {{0.5f, 0.092, 0.167f, 1.0f}};
-    m_timePassed += deltaTime;
+    m_timePassed += (float)deltaTime;
 
-    // TODO: re-create swapchain on resize / minimise.
+    // TODO:    re-create swapchain on resize / minimise.
 
     render_sync();
     m_commandBuffer->reset();
