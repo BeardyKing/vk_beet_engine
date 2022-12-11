@@ -3,6 +3,7 @@
 #include <beet/gfx/vulkan_buffer.h>
 #include <beet/gfx/vulkan_command_buffer.h>
 #include <beet/gfx/vulkan_command_queue.h>
+#include <beet/gfx/vulkan_descriptors.h>
 #include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_mesh.h>
 #include <beet/gfx/vulkan_pipeline.h>
@@ -58,11 +59,18 @@ class Renderer : public Subsystem {
     // TODO: VULKAN BUFFER FUNCTIONS SHOULD PROBABLY BE STATIC.
     //       UNLESS WE PASS THE BUFFER OBJECT AROUND INSTEAD.
     VmaAllocator get_allocator() { return m_buffer->get_allocator(); }
+    gfx::AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
+        return m_buffer->create_buffer(allocSize, usage, memoryUsage);
+    }
+    void destroy_buffer(gfx::AllocatedBuffer allocBuffer) { m_buffer->destroy_buffer(allocBuffer); }
 
     std::array<gfx::FrameData, gfx::FRAME_OVERLAP_COUNT>& get_frame_data() { return m_commandBuffer->get_frames(); }
     VkSemaphore& get_present_semaphore() { return m_commandBuffer->get_present_semaphore(); }
     VkSemaphore& get_render_semaphore() { return m_commandBuffer->get_render_semaphore(); }
     VkFence& get_render_fence() { return m_commandBuffer->get_render_fence(); }
+    VkDescriptorSet& get_global_descriptor() { return m_commandBuffer->get_global_descriptor(); }
+
+    VkDescriptorSetLayout get_global_descriptor_set() { return m_descriptors->get_global_descriptor_set(); }
 
    private:
     Engine& m_engine;
@@ -70,6 +78,7 @@ class Renderer : public Subsystem {
    private:
     std::shared_ptr<gfx::VulkanDevice> m_device;
     std::shared_ptr<gfx::VulkanBuffer> m_buffer;
+    std::shared_ptr<gfx::VulkanDescriptors> m_descriptors;
     std::shared_ptr<gfx::VulkanSwapchain> m_swapchain;
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;

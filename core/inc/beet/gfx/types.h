@@ -3,11 +3,10 @@
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
-namespace beet {
-namespace gfx {
+#include <glm/glm.hpp>
+using namespace glm;
 
-enum class ShaderType { Vertex, Fragment, LAST };
-constexpr unsigned int FRAME_OVERLAP_COUNT = 2;
+namespace beet::gfx {
 
 struct AllocatedBuffer {
     VkBuffer buffer;
@@ -19,5 +18,26 @@ struct AllocatedImage {
     VmaAllocation allocation;
 };
 
-}  // namespace gfx
-}  // namespace beet
+//===GLOBAL DESCRIPTOR===//
+struct GPUCameraData{
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+};
+
+//===DOUBLE BUFFER CONTENTS===//
+struct FrameData {
+    VkSemaphore presentSemaphore;
+    VkSemaphore renderSemaphore;
+    VkFence renderFence;
+
+    VkCommandPool commandPool;
+    VkCommandBuffer mainCommandBuffer;
+
+    AllocatedBuffer cameraBuffer;
+    VkDescriptorSet globalDescriptor;
+};
+
+constexpr unsigned int FRAME_OVERLAP_COUNT = 2;
+enum class ShaderType { Vertex, Fragment, LAST };
+}  // namespace beet::gfx

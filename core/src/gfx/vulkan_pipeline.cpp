@@ -41,9 +41,13 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
     VkExtent2D extent = {static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)};
 
     //===BUILD PIPELINE INFO===//
+    auto globalDescriptorSetLayout = m_renderer.get_global_descriptor_set();
     VkPipelineLayoutCreateInfo pipeline_layout_info = init::pipeline_layout_create_info();
     pipeline_layout_info.pPushConstantRanges = &pushConstantRange;
     pipeline_layout_info.pushConstantRangeCount = 1;  // FIXME:   Only supports 1 stage at this time.
+    pipeline_layout_info.setLayoutCount = 1;
+    pipeline_layout_info.pSetLayouts = &globalDescriptorSetLayout;
+
     auto pipelineInfoResult = vkCreatePipelineLayout(device, &pipeline_layout_info, nullptr, &m_pipelineLayout);
     BEET_ASSERT_MESSAGE(pipelineInfoResult == VK_SUCCESS, "failed to create pipeline")
 

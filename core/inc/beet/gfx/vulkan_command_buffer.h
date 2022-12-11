@@ -11,15 +11,6 @@ class Renderer;
 
 namespace beet::gfx {
 
-struct FrameData {
-    VkSemaphore presentSemaphore;
-    VkSemaphore renderSemaphore;
-    VkFence renderFence;
-
-    VkCommandPool commandPool;
-    VkCommandBuffer mainCommandBuffer;
-};
-
 class VulkanCommandBuffer {
    public:
     VulkanCommandBuffer(Renderer& renderer);
@@ -36,6 +27,8 @@ class VulkanCommandBuffer {
     VkSemaphore& get_present_semaphore() { return m_frames[m_currentFrame].presentSemaphore; }
     VkSemaphore& get_render_semaphore() { return m_frames[m_currentFrame].renderSemaphore; }
     VkFence& get_render_fence() { return m_frames[m_currentFrame].renderFence; }
+    AllocatedBuffer& get_camera_buffer() { return m_frames[m_currentFrame].cameraBuffer; }
+    VkDescriptorSet& get_global_descriptor() { return m_frames[m_currentFrame].globalDescriptor; }
 
     std::array<FrameData, FRAME_OVERLAP_COUNT>& get_frames() { return m_frames; }
 

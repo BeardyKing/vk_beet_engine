@@ -11,6 +11,11 @@ VulkanCommandBuffer::VulkanCommandBuffer(Renderer& renderer) : m_renderer(render
 
 VulkanCommandBuffer::~VulkanCommandBuffer() {
     cleanup();
+
+    for (auto& frame : m_frames) {
+        m_renderer.destroy_buffer(frame.cameraBuffer);
+    }
+
     log::debug("VulkanCommandBuffer destroyed");
 }
 

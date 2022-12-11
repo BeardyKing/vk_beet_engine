@@ -45,4 +45,26 @@ VulkanBuffer::~VulkanBuffer() {
     log::debug("VulkanBuffer destroyed");
 }
 
+AllocatedBuffer VulkanBuffer::create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
+    VkBufferCreateInfo bufferInfo = {};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.pNext = nullptr;
+    bufferInfo.size = allocSize;
+    bufferInfo.usage = usage;
+
+    VmaAllocationCreateInfo vmaAllocInfo = {};
+    vmaAllocInfo.usage = memoryUsage;
+
+    AllocatedBuffer newBuffer{};
+    auto result =
+        vmaCreateBuffer(m_allocator, &bufferInfo, &vmaAllocInfo, &newBuffer.buffer, &newBuffer.allocation, nullptr);
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "failed to create AllocatedBuffer");
+
+    return newBuffer;
+}
+
+void VulkanBuffer::destroy_buffer(AllocatedBuffer allocBuffer) {
+    vmaDestroyBuffer(m_allocator, allocBuffer.buffer, allocBuffer.allocation);
+}
+
 }  // namespace beet::gfx

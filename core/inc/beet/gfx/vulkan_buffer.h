@@ -23,6 +23,9 @@ class VulkanBuffer {
 
     VmaAllocator get_allocator() { return m_allocator; }
 
+    AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+    void destroy_buffer(AllocatedBuffer allocBuffer);
+
    private:
     VmaAllocator m_allocator;
 

@@ -15,6 +15,7 @@ Renderer::Renderer(Engine& engine) : m_engine(engine) {
     m_commandBuffer = std::make_shared<gfx::VulkanCommandBuffer>(*this);
     m_renderPass = std::make_shared<gfx::VulkanRenderPass>(*this);
     m_commandQueue = std::make_shared<gfx::VulkanCommandQueue>(*this);
+    m_descriptors = std::make_shared<gfx::VulkanDescriptors>(*this);
     m_pipelineMesh = std::make_shared<gfx::VulkanPipeline>(*this);
 }
 
@@ -33,8 +34,8 @@ void Renderer::on_awake() {
     }
     {
         // RES:SHADER
-        auto triRedVertSrc = AssetLoader::read_file("../res/shaders/tri_mesh_shader.vert.spv");
-        auto triRedFragSrc = AssetLoader::read_file("../res/shaders/tri_mesh_shader.frag.spv");
+        auto triRedVertSrc = AssetLoader::read_file("../res/shaders/standard_unlit.vert.spv");
+        auto triRedFragSrc = AssetLoader::read_file("../res/shaders/standard_unlit.frag.spv");
         gfx::VulkanShaderModules redTriangleShader(*this);
         redTriangleShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
         redTriangleShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
@@ -92,13 +93,31 @@ void Renderer::on_update(double deltaTime) {
     VkClearValue clearValues[] = {clearValue, depthClear};
     info.pClearValues = &clearValues[0];
 
+    // TODO: This is painful and should really be managed by some class / components
+    //       i.e. Camera/Transform/UpdateGlobalDescriptor
     //===MESH LOCAL===//
-    glm::vec3 camPos = {0.f, -0.5f, -2.f};
-    glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-    glm::mat4 projection = glm::perspective(glm::radians(90.f), 1700.f / 900.f, 0.1f, 200.0f);
-    projection[1][1] *= -1;
     glm::mat4 model = glm::rotate(glm::mat4{1.0f}, glm::radians(m_timePassed * 20.0f), glm::vec3(0, 1, 0));
-    glm::mat4 mesh_matrix = projection * view * model;
+    glm::mat4 meshMatrix = model;
+
+    //===CAMERA===//
+    glm::vec3 camPos = {0.f, -1.0f, -3.f};
+    glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
+    glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
+    projection[1][1] *= -1;
+
+    gfx::GPUCameraData camData{};
+    camData.proj = projection;
+    camData.view = view;
+    camData.viewProj = projection * view;
+
+    //===CAMERA::UPDATE_GLOBAL_DESCRIPTOR===//
+    void* data;
+    auto allocator = m_buffer->get_allocator();
+    auto cameraBuffer = m_commandBuffer->get_camera_buffer();
+    vmaMapMemory(allocator, cameraBuffer.allocation, &data);
+    memcpy(data, &camData, sizeof(gfx::GPUCameraData));
+    vmaUnmapMemory(allocator, cameraBuffer.allocation);
+    //===EXIT HELL===//
 
     auto cmd = m_commandBuffer->get_main_command_buffer();
     {
@@ -106,12 +125,18 @@ void Renderer::on_update(double deltaTime) {
         {
             vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
             {
+                // TODO: We should only rebind our pipeline when it changes
+                //       (There is only 1 pipeline in use currently)
                 vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineMesh->get_pipeline());
+                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineMesh->get_pipelineLayout(), 0,
+                                        1, &get_global_descriptor(), 0, nullptr);
+                // TODO:END
+
                 VkDeviceSize offset = 0;
                 vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh.vertexBuffer.buffer, &offset);
 
                 MeshPushConstants tmpConstants{};
-                tmpConstants.render_matrix = mesh_matrix;
+                tmpConstants.render_matrix = meshMatrix;
 
                 vkCmdPushConstants(cmd, m_pipelineMesh->get_pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                                    sizeof(MeshPushConstants), &tmpConstants);
@@ -137,7 +162,7 @@ void Renderer::on_destroy() {}
 
 Renderer::~Renderer() {
     // TODO:    This is a bit of a hack we just render out as many frames as we have buffered command buffers
-    for (auto frame : get_frame_data()) {
+    for (auto& frame : get_frame_data()) {
         render_sync();
         m_commandBuffer->reset();
         m_swapchain->acquire_next_image();
