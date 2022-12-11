@@ -33,6 +33,8 @@ class Renderer : public Subsystem {
 
     Engine& get_engine() { return m_engine; }
 
+    void recreate_swap_chain();
+
     VkDevice get_device() { return m_device->get_device(); }
     VkPhysicalDevice get_physical_device() { return m_device->get_physical_device(); }
     VkSurfaceKHR get_surface() { return m_device->get_surface(); }
@@ -40,6 +42,7 @@ class Renderer : public Subsystem {
     uint32_t get_queue_family() { return m_device->get_queue_family(); }
     VkQueue get_graphics_queue() { return m_device->get_queue(); }
     VkInstance get_instance() { return m_device->get_instance(); }
+    void wait_idle() { m_device->wait_idle(); }
 
     VkSwapchainKHR get_swapchain() { return m_swapchain->get_swapchain(); }
     VkFormat get_swapchain_image_format() { return m_swapchain->get_swapchain_image_format(); }
@@ -50,14 +53,16 @@ class Renderer : public Subsystem {
     VkFormat get_depth_format() { return m_swapchain->get_depth_format(); }
 
     void render_sync() { m_renderPass->sync(); }
-    VkSemaphore get_present_semaphore() { return m_renderPass->get_present_semaphore(); }
-    VkSemaphore get_render_semaphore() { return m_renderPass->get_render_semaphore(); }
-    VkFence get_render_fence() { return m_renderPass->get_render_fence(); }
     VkRenderPass get_render_pass() { return m_renderPass->get_render_pass(); }
 
     // TODO: VULKAN BUFFER FUNCTIONS SHOULD PROBABLY BE STATIC.
     //       UNLESS WE PASS THE BUFFER OBJECT AROUND INSTEAD.
     VmaAllocator get_allocator() { return m_buffer->get_allocator(); }
+
+    std::array<gfx::FrameData, gfx::FRAME_OVERLAP_COUNT>& get_frame_data() { return m_commandBuffer->get_frames(); }
+    VkSemaphore& get_present_semaphore() { return m_commandBuffer->get_present_semaphore(); }
+    VkSemaphore& get_render_semaphore() { return m_commandBuffer->get_render_semaphore(); }
+    VkFence& get_render_fence() { return m_commandBuffer->get_render_fence(); }
 
    private:
     Engine& m_engine;

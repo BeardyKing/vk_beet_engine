@@ -14,20 +14,26 @@ VulkanRenderPass::VulkanRenderPass(Renderer& renderer) : m_renderer(renderer) {
 }
 
 VulkanRenderPass::~VulkanRenderPass() {
+    cleanup();
+    log::debug("VulkanRenderPass destroyed");
+}
+
+void VulkanRenderPass::cleanup() {
     auto device = m_renderer.get_device();
     vkDeviceWaitIdle(device);
-
-    vkDestroyFence(device, m_renderFence, nullptr);
-    vkDestroySemaphore(device, m_renderSemaphore, nullptr);
-    vkDestroySemaphore(device, m_presentSemaphore, nullptr);
-
     vkDestroyRenderPass(device, m_renderPass, nullptr);
 
     for (int i = 0; i < m_framebuffers.size(); i++) {
         vkDestroyFramebuffer(device, m_framebuffers[i], nullptr);
     }
+}
 
-    log::debug("VulkanRenderPass destroyed");
+void VulkanRenderPass::recreate() {
+    cleanup();
+
+    init_default_renderpass();
+    init_framebuffers();
+    init_sync_structures();
 }
 
 void VulkanRenderPass::init_default_renderpass() {
@@ -81,12 +87,14 @@ void VulkanRenderPass::init_default_renderpass() {
     VkSubpassDependency depth_dependency = {};
     depth_dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
     depth_dependency.dstSubpass = 0;
-    depth_dependency.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    depth_dependency.srcStageMask =
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
     depth_dependency.srcAccessMask = 0;
-    depth_dependency.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+    depth_dependency.dstStageMask =
+        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
     depth_dependency.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    VkSubpassDependency dependencies[2] = { dependency, depth_dependency };
+    VkSubpassDependency dependencies[2] = {dependency, depth_dependency};
     VkAttachmentDescription attachments[2] = {color_attachment, depth_attachment};
 
     VkRenderPassCreateInfo render_pass_info = {};
@@ -123,7 +131,6 @@ void VulkanRenderPass::init_framebuffers() {
     m_framebuffers = std::vector<VkFramebuffer>(swapchainImageCount);
 
     for (int i = 0; i < swapchainImageCount; i++) {
-
         VkImageView attachments[2];
         attachments[0] = swapchainImageViews[i];
         attachments[1] = depthImageView;
@@ -138,37 +145,53 @@ void VulkanRenderPass::init_framebuffers() {
 void VulkanRenderPass::init_sync_structures() {
     auto device = m_renderer.get_device();
 
-    VkFenceCreateInfo fenceCreateInfo = {};
-    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCreateInfo.pNext = nullptr;
-    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    {
-        auto result = vkCreateFence(device, &fenceCreateInfo, nullptr, &m_renderFence);
-        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create fence");
+    VkFenceCreateInfo fenceCreateInfo = init::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
+    VkSemaphoreCreateInfo semaphoreCreateInfo = init::semaphore_create_info(0);
+
+    for (auto& frame : m_renderer.get_frame_data()) {
+        {
+            auto result = vkCreateFence(device, &fenceCreateInfo, nullptr, &frame.renderFence);
+            BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create fence");
+        }
+        {
+            auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.presentSemaphore);
+            BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create present semaphore");
+        }
+        {
+            auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &frame.renderSemaphore);
+            BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create render semaphore");
+        }
     }
 
-    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    semaphoreCreateInfo.pNext = nullptr;
-    semaphoreCreateInfo.flags = 0;
-    {
-        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_presentSemaphore);
-        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create present semaphore");
-    }
-    {
-        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_renderSemaphore);
-        BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create render semaphore");
-    }
+    //    VkFenceCreateInfo fenceCreateInfo = {};
+    //    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    //    fenceCreateInfo.pNext = nullptr;
+    //    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    //    {
+    //        auto result = vkCreateFence(device, &fenceCreateInfo, nullptr, &m_renderFence);
+    //    }
+    //
+    //    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+    //    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    //    semaphoreCreateInfo.pNext = nullptr;
+    //    semaphoreCreateInfo.flags = 0;
+    //    {
+    //        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_presentSemaphore);
+    //    }
+    //    {
+    //        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_renderSemaphore);
+    //    }
 }
 void VulkanRenderPass::sync() {
     auto device = m_renderer.get_device();
+    auto& renderFence = m_renderer.get_render_fence();
 
     {
-        auto result = vkWaitForFences(device, 1, &m_renderFence, true, 1000000000);
+        auto result = vkWaitForFences(device, 1, &renderFence, true, 1000000000);
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed wait for render fence");
     }
     {
-        auto result = vkResetFences(device, 1, &m_renderFence);
+        auto result = vkResetFences(device, 1, &renderFence);
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed reset render fence");
     }
 }

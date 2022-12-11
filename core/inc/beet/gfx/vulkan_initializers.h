@@ -39,4 +39,8 @@ VkPipelineDepthStencilStateCreateInfo depth_stencil_create_info(bool bDepthTest,
                                                                 bool bDepthWrite,
                                                                 VkCompareOp compareOp);
 
+VkFenceCreateInfo fence_create_info(VkFenceCreateFlags flags);
+
+VkSemaphoreCreateInfo semaphore_create_info(VkSemaphoreCreateFlags flags);
+
 }  // namespace beet::gfx::init

@@ -22,13 +22,16 @@ class VulkanSwapchain {
     VkImageView get_depth_image_view() { return m_depthImageView; }
     VkFormat get_depth_format() { return m_depthFormat; }
 
-    void acquire_next_image();
+    VkResult acquire_next_image();
     uint32_t get_swapchain_index() { return m_swapchainIndex; }
 
     void present();
 
+    void recreate();
+
    private:
     void init_swapchain();
+    void cleanup();
 
    private:
     VkSwapchainKHR m_swapchain;

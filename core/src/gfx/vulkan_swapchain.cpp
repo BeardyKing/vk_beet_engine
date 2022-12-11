@@ -14,7 +14,13 @@ namespace beet::gfx {
 VulkanSwapchain::VulkanSwapchain(Renderer& renderer) : m_renderer(renderer) {
     init_swapchain();
 }
+
 VulkanSwapchain::~VulkanSwapchain() {
+    cleanup();
+    log::debug("VulkanSwapchain destroyed");
+}
+
+void VulkanSwapchain::cleanup() {
     auto device = m_renderer.get_device();
     auto allocator = m_renderer.get_allocator();
 
@@ -26,8 +32,11 @@ VulkanSwapchain::~VulkanSwapchain() {
     for (auto& m_swapchainImageView : m_swapchainImageViews) {
         vkDestroyImageView(device, m_swapchainImageView, nullptr);
     }
+}
 
-    log::debug("VulkanSwapchain destroyed");
+void VulkanSwapchain::recreate() {
+    cleanup();
+    init_swapchain();
 }
 
 void VulkanSwapchain::init_swapchain() {
@@ -70,12 +79,16 @@ void VulkanSwapchain::init_swapchain() {
     BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to create depth image view");
 }
 
-void VulkanSwapchain::acquire_next_image() {
+VkResult VulkanSwapchain::acquire_next_image() {
     auto device = m_renderer.get_device();
     auto semaphore = m_renderer.get_present_semaphore();
 
     auto result = vkAcquireNextImageKHR(device, m_swapchain, 1000000000, semaphore, nullptr, &m_swapchainIndex);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        return result;
+    }
     BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to get next swapchain image");
+    return result;
 }
 
 void VulkanSwapchain::present() {
@@ -90,7 +103,7 @@ void VulkanSwapchain::present() {
     presentInfo.pImageIndices = &m_swapchainIndex;
 
     auto result = vkQueuePresentKHR(graphicsQueue, &presentInfo);
-    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to present image");
+    //    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to present image");
 }
 
 }  // namespace beet::gfx

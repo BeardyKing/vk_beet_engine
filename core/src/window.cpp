@@ -45,7 +45,7 @@ void Window::window_size_callback(GLFWwindow* window, int width, int height) {
     vec2i size{width, height};
     self->m_width = size.x;
     self->m_height = size.y;
-    self->m_engine.get_device_module().lock()->recreate_swap_chain();
+    self->m_engine.get_renderer_module().lock()->recreate_swap_chain();
 }
 
 bool Window::is_open() {

@@ -53,18 +53,37 @@ void Renderer::on_awake() {
     }
 }
 
+void Renderer::recreate_swap_chain() {
+    auto window = m_engine.get_window_module().lock();
+    vec2i size{0};
+    while (!size.x || !size.y) {
+        window->get_framebuffer_size(size);
+        window->wait_events();
+    }
+
+    wait_idle();
+
+    m_commandBuffer->recreate();
+    m_swapchain->recreate();
+    m_renderPass->recreate();
+}
+
 void Renderer::on_update(double deltaTime) {
     VkClearValue clearValue;
     VkClearValue depthClear;
     clearValue.color = {{0.5f, 0.092, 0.167f, 1.0f}};
     depthClear.depthStencil.depth = 1.f;
 
-    m_timePassed += (float)deltaTime;
-    // TODO:    re-create swapchain on resize / minimise.
-
     render_sync();
     m_commandBuffer->reset();
-    m_swapchain->acquire_next_image();
+
+    auto result = m_swapchain->acquire_next_image();
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreate_swap_chain();
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        BEET_ASSERT_MESSAGE(BEET_FALSE, "failed to acquire swap chain image!");
+        return;
+    }
 
     auto info = m_renderPass->create_begin_info();
     info.clearValueCount = 1;
@@ -103,10 +122,11 @@ void Renderer::on_update(double deltaTime) {
         }
         m_commandBuffer->end_recording();
     }
-    m_commandQueue->add_command(cmd);
 
+    m_commandQueue->add_command(cmd);
     m_commandQueue->submit();
     m_swapchain->present();
+    m_commandBuffer->next_frame();
 
     m_timePassed += (float)deltaTime;
 }
@@ -116,10 +136,13 @@ void Renderer::on_late_update() {}
 void Renderer::on_destroy() {}
 
 Renderer::~Renderer() {
-    render_sync();
-    m_commandBuffer->reset();
-    m_swapchain->acquire_next_image();
-    m_swapchain->acquire_next_image();
+    // TODO:    This is a bit of a hack we just render out as many frames as we have buffered command buffers
+    for (auto frame : get_frame_data()) {
+        render_sync();
+        m_commandBuffer->reset();
+        m_swapchain->acquire_next_image();
+        m_commandBuffer->next_frame();
+    }
 
     m_buffer->destroy_mesh(m_loadedMesh);
 

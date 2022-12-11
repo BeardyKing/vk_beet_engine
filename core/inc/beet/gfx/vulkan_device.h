@@ -19,6 +19,8 @@ class VulkanDevice {
     uint32_t get_queue_family() { return m_graphicsQueueFamily; }
     VkInstance get_instance() { return m_instance; }
 
+    void wait_idle() { vkDeviceWaitIdle(m_device); }
+
    private:
     void init_vulkan();
 
