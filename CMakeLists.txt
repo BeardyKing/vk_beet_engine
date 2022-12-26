@@ -58,8 +58,7 @@ set_target_properties(beet PROPERTIES OUTPUT_NAME beet_build)
 #========= SHADER =========#
 
 #https://gist.github.com/evilactually/a0d191701cb48f157b05be7f74d79396
-
-if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
+if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL AMD64)
     set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
 else ()
     set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin32/glslangValidator.exe")
