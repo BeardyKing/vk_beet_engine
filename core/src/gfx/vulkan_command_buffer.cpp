@@ -57,6 +57,7 @@ void VulkanCommandBuffer::init_commands() {
         }
     }
 }
+
 void VulkanCommandBuffer::reset() {
     auto result = vkResetCommandBuffer(get_main_command_buffer(), 0);
     BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to reset command buffer");
@@ -75,6 +76,7 @@ void VulkanCommandBuffer::begin_recording() {
 
 void VulkanCommandBuffer::end_recording() {
     auto result = vkEndCommandBuffer(get_main_command_buffer());
+    BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to finish command buffer recording");
 }
 
 }  // namespace beet::gfx

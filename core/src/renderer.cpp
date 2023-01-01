@@ -30,7 +30,7 @@ void Renderer::on_awake() {
     {
         // RES:MESH:TODO:   UPLOADING MESH DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
         m_loadedMesh = AssetLoader::load_model("../res/misc/viking_room.obj");
-        m_buffer->upload_mesh_immediate(m_loadedMesh);
+        m_buffer->upload_mesh(m_loadedMesh);
     }
     {
         // RES:SHADER

@@ -83,7 +83,7 @@ VkResult VulkanSwapchain::acquire_next_image() {
     auto device = m_renderer.get_device();
     auto semaphore = m_renderer.get_present_semaphore();
 
-    auto result = vkAcquireNextImageKHR(device, m_swapchain, 1000000000, semaphore, nullptr, &m_swapchainIndex);
+    auto result = vkAcquireNextImageKHR(device, m_swapchain, 1000000000, semaphore, VK_NULL_HANDLE, &m_swapchainIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         return result;
     }

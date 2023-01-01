@@ -18,8 +18,15 @@ struct AllocatedImage {
     VmaAllocation allocation;
 };
 
+//===CPU->GPU CONTEXT===//
+struct UploadContext {
+    VkFence uploadFence;
+    VkCommandPool commandPool;
+    VkCommandBuffer commandBuffer;
+};
+
 //===GLOBAL DESCRIPTOR===//
-struct GPUCameraData{
+struct GPUCameraData {
     mat4 view;
     mat4 proj;
     mat4 viewProj;

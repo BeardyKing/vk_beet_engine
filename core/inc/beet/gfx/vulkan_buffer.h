@@ -18,7 +18,7 @@ class VulkanBuffer {
     VulkanBuffer(Renderer& renderer);
     ~VulkanBuffer();
 
-    void upload_mesh_immediate(Mesh& mesh);
+    void upload_mesh(Mesh& mesh);
     void destroy_mesh(Mesh& mesh);
 
     VmaAllocator get_allocator() { return m_allocator; }
@@ -27,7 +27,11 @@ class VulkanBuffer {
     void destroy_buffer(AllocatedBuffer allocBuffer);
 
    private:
+    void init_immediate_commands();
+    void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+   private:
     VmaAllocator m_allocator;
+    UploadContext m_uploadContext;
 
    private:
     Renderer& m_renderer;
