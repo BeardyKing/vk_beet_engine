@@ -1,4 +1,5 @@
 #include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_texture.h>
 
 #include <beet/assert.h>
@@ -32,6 +33,11 @@ void Renderer::on_awake() {
         // RES:IMAGE:TODO:  UPLOADING IMAGE DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
         m_loadedTexture.rawImage = AssetLoader::load_image("../res/textures/viking_room.png");
         m_buffer->upload_texture(m_loadedTexture);
+
+        // BUILD IMAGE VIEW
+        VkImageViewCreateInfo imageInfo = gfx::init::imageview_create_info(
+            m_loadedTexture.rawImage.format, m_loadedTexture.image.image, VK_IMAGE_ASPECT_COLOR_BIT);
+        vkCreateImageView(get_device(), &imageInfo, nullptr, &m_loadedTexture.imageView);
     }
     {
         // RES:MESH:TODO:   UPLOADING MESH DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
@@ -176,7 +182,9 @@ Renderer::~Renderer() {
     }
 
     m_buffer->destroy_mesh(m_loadedMesh);
+
     m_buffer->destroy_texture(m_loadedTexture);
+    vkDestroyImageView(get_device(), m_loadedTexture.imageView, nullptr);
 
     log::debug("Renderer destroyed");
 }
