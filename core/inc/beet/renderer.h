@@ -10,6 +10,7 @@
 #include <beet/gfx/vulkan_render_pass.h>
 #include <beet/gfx/vulkan_shader_modules.h>
 #include <beet/gfx/vulkan_swapchain.h>
+#include <beet/gfx/vulkan_texture.h>
 
 #include <beet/asset_loader.h>
 #include <beet/log.h>
@@ -86,6 +87,7 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanPipeline> m_pipelineMesh;
 
     gfx::Mesh m_loadedMesh;
+    gfx::Texture m_loadedTexture;
 
    private:  // tmp
     float m_timePassed{0};

@@ -6,8 +6,10 @@
 #include <vector>
 
 namespace beet {
+class Renderer;
 namespace gfx {
 struct Mesh;
+struct RawImage;
 }  // namespace gfx
 }  // namespace beet
 
@@ -17,5 +19,6 @@ class AssetLoader {
    public:
     static std::vector<char> read_file(const std::string& path);
     static gfx::Mesh load_model(const std::string& modelPath);
+    static gfx::RawImage load_image(const std::string& path);
 };
 }  // namespace beet

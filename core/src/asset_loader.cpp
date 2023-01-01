@@ -1,7 +1,10 @@
 #include <beet/assert.h>
 #include <beet/asset_loader.h>
+#include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_mesh.h>
+#include <beet/gfx/vulkan_texture.h>
 #include <beet/log.h>
+#include <beet/renderer.h>
 #include <beet/types.h>
 
 #include <fstream>
@@ -11,6 +14,9 @@
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 namespace beet {
 std::vector<char> AssetLoader::read_file(const std::string& path) {
@@ -75,6 +81,33 @@ gfx::Mesh AssetLoader::load_model(const std::string& modelPath) {
         }
     }
     return outMesh;
+}
+
+gfx::RawImage AssetLoader::load_image(const std::string& path) {
+    int texWidth, texHeight, texChannels;
+    stbi_uc* pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+    if (pixels == nullptr) {
+        log::error("Failed to load image from path {}", path);
+        BEET_ASSERT_MESSAGE(BEET_TRUE, "failed to load image from path");
+        // TODO:     If we failed to load an image we should throw some useful error to the user and fallback to a
+        //           default texture
+        return gfx::RawImage();
+    }
+
+    void* pixel_ptr = pixels;
+
+    VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+    VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
+
+    VkExtent3D imageExtent;
+    imageExtent.width = static_cast<uint32_t>(texWidth);
+    imageExtent.height = static_cast<uint32_t>(texHeight);
+    imageExtent.depth = 1;
+
+    gfx::RawImage rawImage{pixel_ptr, imageSize, imageFormat, imageExtent};
+    return rawImage;
 }
 
 }  // namespace beet

@@ -1,4 +1,5 @@
 #include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_texture.h>
 
 #include <beet/assert.h>
 #include <beet/asset_loader.h>
@@ -27,6 +28,11 @@ struct MeshPushConstants {
 
 void Renderer::on_awake() {
     // RES:TODO:    REPLACE WITH RESOURCE MANAGER
+    {
+        // RES:IMAGE:TODO:  UPLOADING IMAGE DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
+        m_loadedTexture.rawImage = AssetLoader::load_image("../res/textures/viking_room.png");
+        m_buffer->upload_texture(m_loadedTexture);
+    }
     {
         // RES:MESH:TODO:   UPLOADING MESH DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
         m_loadedMesh = AssetLoader::load_model("../res/misc/viking_room.obj");
@@ -170,6 +176,7 @@ Renderer::~Renderer() {
     }
 
     m_buffer->destroy_mesh(m_loadedMesh);
+    m_buffer->destroy_texture(m_loadedTexture);
 
     log::debug("Renderer destroyed");
 }

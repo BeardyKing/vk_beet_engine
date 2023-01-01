@@ -10,6 +10,7 @@ class Renderer;
 
 namespace beet::gfx {
 struct Mesh;
+struct Texture;
 }  // namespace beet::gfx
 
 namespace beet::gfx {
@@ -18,17 +19,20 @@ class VulkanBuffer {
     VulkanBuffer(Renderer& renderer);
     ~VulkanBuffer();
 
+    void upload_texture(Texture& texture);
+    void destroy_texture(Texture& texture);
+
     void upload_mesh(Mesh& mesh);
     void destroy_mesh(Mesh& mesh);
 
     VmaAllocator get_allocator() { return m_allocator; }
-
     AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
     void destroy_buffer(AllocatedBuffer allocBuffer);
+    void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 
    private:
     void init_immediate_commands();
-    void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+
    private:
     VmaAllocator m_allocator;
     UploadContext m_uploadContext;
