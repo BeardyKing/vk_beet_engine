@@ -1,9 +1,15 @@
 #version 450
 
-layout (location = 0) in vec3 inColor;
+layout (location = 0) in StageLayout {
+    vec3 color;
+    vec3 normal;
+    vec2 uv;
+} stageLayout;
+
 layout (location = 0) out vec4 outFragColor;
 
 void main()
 {
-    outFragColor = vec4(inColor, 1.0f);
+    vec4 tmpColor = vec4(stageLayout.uv, 0.0f, 1.0f);
+    outFragColor = vec4(tmpColor);
 }

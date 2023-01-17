@@ -148,6 +148,7 @@ void Renderer::on_update(double deltaTime) {
                 vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh.vertexBuffer.buffer, &offset);
 
                 MeshPushConstants tmpConstants{};
+                tmpConstants.data = glm::vec4{0};
                 tmpConstants.render_matrix = meshMatrix;
 
                 vkCmdPushConstants(cmd, m_pipelineMesh->get_pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,

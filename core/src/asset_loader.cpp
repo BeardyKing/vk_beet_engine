@@ -76,6 +76,7 @@ gfx::Mesh AssetLoader::load_model(const std::string& modelPath) {
             vertex.position = {position.x, position.y, position.z};
             vertex.normal = {normal.x, normal.y, normal.z};
             vertex.color = {1.0f, 1.0f, 1.0f};
+            vertex.uv = {textureCoordinates.x, textureCoordinates.y};
 
             outMesh.vertices.push_back(vertex);
         }
