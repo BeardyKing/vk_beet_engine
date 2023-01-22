@@ -75,3 +75,7 @@ add_library(vma INTERFACE)
 
 add_subdirectory(vk-bootstrap)
 
+#======== FLECS =======#
+
+set(FLECS_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+add_subdirectory(flecs)

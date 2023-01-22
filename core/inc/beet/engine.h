@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <beet/asset_manager.h>
 #include <beet/device.h>
 #include <beet/renderer.h>
 #include <beet/window.h>
@@ -21,6 +22,7 @@ class Engine {
 
     void update_modules();
     bool is_open();
+    bool is_client();
 
     std::weak_ptr<Renderer> get_renderer_module() { return m_rendererModule; }
     std::weak_ptr<Window> get_window_module() { return m_windowModule; }
@@ -32,6 +34,7 @@ class Engine {
 
     std::shared_ptr<Renderer> m_rendererModule;
     std::shared_ptr<Window> m_windowModule;
+    std::shared_ptr<AssetManager> m_assetManagerModule;
 };
 
 }  // namespace beet

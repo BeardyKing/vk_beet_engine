@@ -44,6 +44,7 @@ target_link_libraries(beet
         assimp
         vma
         vk-bootstrap::vk-bootstrap
+        flecs_static
         )
 
 

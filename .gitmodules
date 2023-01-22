@@ -25,3 +25,6 @@
 [submodule "third/vk-bootstrap"]
 	path = third/vk-bootstrap
 	url = https://github.com/charles-lunarg/vk-bootstrap
+[submodule "third/flecs"]
+	path = third/flecs
+	url = https://github.com/SanderMertens/flecs.git
