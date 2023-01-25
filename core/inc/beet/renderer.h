@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <beet/gfx/vulkan_buffer.h>
 #include <beet/gfx/vulkan_command_buffer.h>
 #include <beet/gfx/vulkan_command_queue.h>
@@ -28,6 +30,8 @@ class Renderer : public Subsystem {
     explicit Renderer(Engine& engine);
     ~Renderer();
 
+    static std::optional<std::reference_wrapper<Renderer>> get_renderer();
+
     void on_awake() override;
     void on_update(double deltaTime) override;
     void on_late_update() override;
@@ -36,6 +40,14 @@ class Renderer : public Subsystem {
     Engine& get_engine() { return m_engine; }
 
     void recreate_swap_chain();
+
+    // TODO: VK UTIL FUNCTIONS MOVE TO UTIL CLASS
+    void upload_texture(gfx::Texture& texture);
+    void destroy_texture(gfx::Texture& texture);
+    void create_image_view(gfx::Texture& texture);
+    void destroy_image_view(gfx::Texture& texture);
+    void upload_mesh(gfx::Mesh& mesh);
+    void destroy_mesh(gfx::Mesh& mesh);
 
     VkDevice get_device() { return m_device->get_device(); }
     VkPhysicalDevice get_physical_device() { return m_device->get_physical_device(); }
@@ -75,6 +87,7 @@ class Renderer : public Subsystem {
 
    private:
     Engine& m_engine;
+    inline static std::optional<std::reference_wrapper<Renderer>> s_renderer = std::nullopt;
 
    private:
     std::shared_ptr<gfx::VulkanDevice> m_device;
@@ -86,8 +99,8 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
     std::shared_ptr<gfx::VulkanPipeline> m_pipelineMesh;
 
-    gfx::Mesh m_loadedMesh;
-    gfx::Texture m_loadedTexture;
+    std::shared_ptr<gfx::Texture> m_loadedTexture;
+    std::shared_ptr<gfx::Mesh> m_loadedMesh;
 
    private:  // tmp
     float m_timePassed{0};

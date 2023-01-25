@@ -11,6 +11,8 @@
 namespace beet {
 
 Renderer::Renderer(Engine& engine) : m_engine(engine) {
+    s_renderer = std::ref(*this);
+
     m_device = std::make_shared<gfx::VulkanDevice>(*this);
     m_buffer = std::make_shared<gfx::VulkanBuffer>(*this);
     m_swapchain = std::make_shared<gfx::VulkanSwapchain>(*this);
@@ -28,26 +30,12 @@ struct MeshPushConstants {
 };
 
 void Renderer::on_awake() {
-    // RES:TODO:    REPLACE WITH RESOURCE MANAGER
-    {
-        // RES:IMAGE:TODO:  UPLOADING IMAGE DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
-        m_loadedTexture.rawImage = AssetLoader::load_image("../res/textures/viking_room.png");
-        m_buffer->upload_texture(m_loadedTexture);
-
-        // BUILD IMAGE VIEW
-        VkImageViewCreateInfo imageInfo = gfx::init::imageview_create_info(
-            m_loadedTexture.rawImage.format, m_loadedTexture.image.image, VK_IMAGE_ASPECT_COLOR_BIT);
-        vkCreateImageView(get_device(), &imageInfo, nullptr, &m_loadedTexture.imageView);
-    }
-    {
-        // RES:MESH:TODO:   UPLOADING MESH DATA TO GPU SHOULD BE DONE VIA RESOURCE MANAGER
-        m_loadedMesh = AssetLoader::load_model("../res/misc/viking_room.obj");
-        m_buffer->upload_mesh(m_loadedMesh);
-    }
+    { m_loadedTexture = ResourceManager::load_texture("../res/textures/viking_room.png"); }
+    { m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj"); }
     {
         // RES:SHADER
-        auto triRedVertSrc = AssetLoader::read_file("../res/shaders/standard_unlit.vert.spv");
-        auto triRedFragSrc = AssetLoader::read_file("../res/shaders/standard_unlit.frag.spv");
+        auto triRedVertSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.vert.spv");
+        auto triRedFragSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.frag.spv");
         gfx::VulkanShaderModules redTriangleShader(*this);
         redTriangleShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
         redTriangleShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
@@ -145,7 +133,7 @@ void Renderer::on_update(double deltaTime) {
                 // TODO:END
 
                 VkDeviceSize offset = 0;
-                vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh.vertexBuffer.buffer, &offset);
+                vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh->vertexBuffer.buffer, &offset);
 
                 MeshPushConstants tmpConstants{};
                 tmpConstants.data = glm::vec4{0};
@@ -154,7 +142,7 @@ void Renderer::on_update(double deltaTime) {
                 vkCmdPushConstants(cmd, m_pipelineMesh->get_pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                                    sizeof(MeshPushConstants), &tmpConstants);
 
-                vkCmdDraw(cmd, m_loadedMesh.vertices.size(), 1, 0, 0);
+                vkCmdDraw(cmd, m_loadedMesh->vertices.size(), 1, 0, 0);
             }
             vkCmdEndRenderPass(cmd);
         }
@@ -173,6 +161,40 @@ void Renderer::on_late_update() {}
 
 void Renderer::on_destroy() {}
 
+// TODO:    VK UTIL
+//          MOVE FUNCTIONS TO UTIL CLASS
+void Renderer::destroy_texture(gfx::Texture& texture) {
+    m_buffer->destroy_texture(texture);
+}
+
+void Renderer::upload_texture(gfx::Texture& texture) {
+    m_buffer->upload_texture(texture);
+}
+
+void Renderer::create_image_view(gfx::Texture& texture) {
+    VkImageViewCreateInfo imageInfo =
+        gfx::init::imageview_create_info(texture.rawImage.format, texture.image.image, VK_IMAGE_ASPECT_COLOR_BIT);
+    vkCreateImageView(get_device(), &imageInfo, nullptr, &texture.imageView);
+}
+
+void Renderer::destroy_image_view(gfx::Texture& texture) {
+    vkDestroyImageView(get_device(), texture.imageView, nullptr);
+}
+
+void Renderer::upload_mesh(gfx::Mesh& mesh) {
+    m_buffer->upload_mesh(mesh);
+}
+
+void Renderer::destroy_mesh(gfx::Mesh& mesh) {
+    m_buffer->destroy_mesh(mesh);
+}
+// TODO:    VK UTIL
+
+std::optional<std::reference_wrapper<Renderer>> Renderer::get_renderer() {
+    BEET_ASSERT_MESSAGE(s_renderer.has_value(), "Renderer does not exist")
+    return s_renderer;
+}
+
 Renderer::~Renderer() {
     // TODO:    This is a bit of a hack we just render out as many frames as we have buffered command buffers
     for (auto& frame : get_frame_data()) {
@@ -182,10 +204,8 @@ Renderer::~Renderer() {
         m_commandBuffer->next_frame();
     }
 
-    m_buffer->destroy_mesh(m_loadedMesh);
-
-    m_buffer->destroy_texture(m_loadedTexture);
-    vkDestroyImageView(get_device(), m_loadedTexture.imageView, nullptr);
+    ResourceManager::free_textures();
+    ResourceManager::free_meshes();
 
     log::debug("Renderer destroyed");
 }

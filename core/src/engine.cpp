@@ -5,12 +5,12 @@ namespace beet {
 Engine::Engine() {
     m_windowModule = std::make_shared<Window>(1024, 768, "vk_beetroot", *this);
     m_rendererModule = std::make_shared<Renderer>(*this);
-    m_assetManagerModule = std::make_shared<AssetManager>(*this, std::nullopt);
+    m_resourceModule = std::make_shared<ResourceManager>(*this);
 
     // order dependent
     m_engineModules.emplace_back(m_windowModule);
     m_engineModules.emplace_back(m_rendererModule);
-    m_engineModules.emplace_back(m_assetManagerModule);
+    m_engineModules.emplace_back(m_resourceModule);
 
     for (auto& module : m_engineModules) {
         module->on_awake();
@@ -44,7 +44,7 @@ void Engine::swap_frame() {
 }
 
 bool Engine::is_client() {
-    return false;
+    return true;
 }
 
 }  // namespace beet

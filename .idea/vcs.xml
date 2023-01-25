@@ -5,6 +5,7 @@
     <mapping directory="$PROJECT_DIR$/cmake-build-debug/_deps/vulkanheaders-src" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third/VulkanMemoryAllocator" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third/assimp" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/third/flecs" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third/glfw" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third/glm" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/third/imgui" vcs="Git" />

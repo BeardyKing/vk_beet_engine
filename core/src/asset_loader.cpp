@@ -19,7 +19,7 @@
 #include <stb_image.h>
 
 namespace beet {
-std::vector<char> AssetLoader::read_file(const std::string& path) {
+std::vector<char> AssetLoader::load_shader_binary(const std::string& path) {
     std::ifstream file{path, std::ios::ate | std::ios::binary};
 
     if (!file.is_open()) {

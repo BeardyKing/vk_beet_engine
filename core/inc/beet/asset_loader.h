@@ -17,7 +17,7 @@ namespace beet {
 
 class AssetLoader {
    public:
-    static std::vector<char> read_file(const std::string& path);
+    static std::vector<char> load_shader_binary(const std::string& path);
     static gfx::Mesh load_model(const std::string& modelPath);
     static gfx::RawImage load_image(const std::string& path);
 };
