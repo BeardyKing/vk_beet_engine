@@ -1,5 +1,4 @@
-#include <beet/log.h>
-#include <beet/material.h>
+#include <beet/component/material.h>
 
 #include <beet/gfx/types.h>
 #include <beet/log.h>

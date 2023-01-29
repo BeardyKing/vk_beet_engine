@@ -2,6 +2,8 @@
 #include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_texture.h>
 
+#include <beet/component/transform.h>
+
 #include <beet/assert.h>
 #include <beet/asset_loader.h>
 #include <beet/engine.h>
@@ -53,10 +55,10 @@ std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
 }
 
 void Renderer::on_awake() {
+    m_transform = std::make_shared<Transform>();
     m_material = std::make_shared<Material>(gfx::PipelineType::Lit);
     m_material->set_albedo_texture(ResourceManager::load_texture("../res/textures/viking_room.png"));
-
-    { m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj"); }
+    m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj");
 }
 
 void Renderer::recreate_swap_chain() {
@@ -99,10 +101,9 @@ void Renderer::on_update(double deltaTime) {
     info.pClearValues = &clearValues[0];
 
     // TODO: This is painful and should really be managed by some class / components
-    //       i.e. Camera/Transform/UpdateGlobalDescriptor
+    //       i.e. Camera/UpdateGlobalDescriptor
     //===MESH LOCAL===//
-    glm::mat4 model = glm::rotate(glm::mat4{1.0f}, glm::radians(m_timePassed * 20.0f), glm::vec3(0, 1, 0));
-    glm::mat4 meshMatrix = model;
+    m_transform->rotate_euler(vec3{0, deltaTime * 20.0f, 0});
 
     //===CAMERA===//
     glm::vec3 camPos = {0.f, -1.0f, -3.f};
@@ -145,7 +146,7 @@ void Renderer::on_update(double deltaTime) {
 
                 MeshPushConstants tmpConstants{};
                 tmpConstants.data = glm::vec4{0};
-                tmpConstants.render_matrix = meshMatrix;
+                tmpConstants.render_matrix = m_transform->get_model_matrix();
 
                 vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
                                    &tmpConstants);
@@ -161,8 +162,6 @@ void Renderer::on_update(double deltaTime) {
     m_commandQueue->submit();
     m_swapchain->present();
     m_commandBuffer->next_frame();
-
-    m_timePassed += (float)deltaTime;
 }
 
 void Renderer::on_late_update() {}

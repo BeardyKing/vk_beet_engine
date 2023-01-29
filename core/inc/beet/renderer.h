@@ -14,14 +14,16 @@
 #include <beet/gfx/vulkan_swapchain.h>
 #include <beet/gfx/vulkan_texture.h>
 
+#include <beet/component/material.h>
+
 #include <beet/asset_loader.h>
 #include <beet/log.h>
-#include <beet/material.h>
 #include <beet/subsystem.h>
 #include <beet/types.h>
 
 namespace beet {
 class Engine;
+class Transform;
 }  // namespace beet
 
 namespace beet {
@@ -102,9 +104,7 @@ class Renderer : public Subsystem {
 
     std::shared_ptr<gfx::Mesh> m_loadedMesh;
     std::shared_ptr<Material> m_material;
-
-   private:  // tmp
-    float m_timePassed{0};
+    std::shared_ptr<Transform> m_transform;
 };
 
 }  // namespace beet
