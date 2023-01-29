@@ -1,7 +1,7 @@
 #include <beet/assert.h>
-#include <beet/asset_manager.h>
 #include <beet/engine.h>
 #include <beet/renderer.h>
+#include <beet/resource_manager.h>
 
 #include <beet/gfx/vulkan_texture.h>
 
@@ -18,11 +18,17 @@ void ResourceManager::on_awake() {
 void ResourceManager::load_resources_manual() {
     if (m_engine.is_client()) {
         load_manual_textures();
+        generate_pipelines();
     }
 }
 
 void ResourceManager::load_manual_textures() {
     load_texture("../res/textures/viking_room.png");
+}
+
+void ResourceManager::generate_pipelines() {
+    Renderer& renderer = Renderer::get_renderer().value().get();
+    m_pipelines[(size_t)gfx::PipelineTypes::Lit] = renderer.generate_lit_pipeline();
 }
 
 std::optional<std::reference_wrapper<ResourceManager>> ResourceManager::get_resource_manager() {
@@ -80,20 +86,36 @@ void ResourceManager::free_meshes_internal() {
     m_meshes.clear();
 }
 
-std::shared_ptr<gfx::Texture> ResourceManager::load_texture(const std::string& path) {
-    return ResourceManager::get_resource_manager().value().get().load_texture_internal(path);
+std::shared_ptr<gfx::VulkanPipeline> ResourceManager::get_pipeline_internal(const gfx::PipelineTypes& type) {
+    return m_pipelines[(size_t)type];
+}
+
+void ResourceManager::free_pipelines_internal() {
+    std::fill(m_pipelines.begin(), m_pipelines.end(), std::shared_ptr<gfx::VulkanPipeline>());
 }
 
 void ResourceManager::free_textures() {
     return ResourceManager::get_resource_manager().value().get().free_textures_internal();
 }
 
-std::shared_ptr<gfx::Mesh> ResourceManager::load_mesh(const std::string& path) {
-    return ResourceManager::get_resource_manager().value().get().load_mesh_internal(path);
-}
-
 void ResourceManager::free_meshes() {
     return ResourceManager::get_resource_manager().value().get().free_meshes_internal();
+}
+
+void ResourceManager::free_pipelines() {
+    return ResourceManager::get_resource_manager().value().get().free_pipelines_internal();
+}
+
+std::shared_ptr<gfx::VulkanPipeline> ResourceManager::get_pipeline(const gfx::PipelineTypes& type) {
+    return ResourceManager::get_resource_manager().value().get().get_pipeline_internal(type);
+}
+
+std::shared_ptr<gfx::Texture> ResourceManager::load_texture(const std::string& path) {
+    return ResourceManager::get_resource_manager().value().get().load_texture_internal(path);
+}
+
+std::shared_ptr<gfx::Mesh> ResourceManager::load_mesh(const std::string& path) {
+    return ResourceManager::get_resource_manager().value().get().load_mesh_internal(path);
 }
 
 void ResourceManager::on_update(double deltaTime) {}

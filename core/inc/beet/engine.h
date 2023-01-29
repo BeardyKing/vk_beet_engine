@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#include <beet/asset_manager.h>
 #include <beet/device.h>
 #include <beet/renderer.h>
+#include <beet/resource_manager.h>
 #include <beet/window.h>
 
 namespace beet {

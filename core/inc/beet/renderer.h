@@ -48,6 +48,7 @@ class Renderer : public Subsystem {
     void destroy_image_view(gfx::Texture& texture);
     void upload_mesh(gfx::Mesh& mesh);
     void destroy_mesh(gfx::Mesh& mesh);
+    std::shared_ptr<gfx::VulkanPipeline> generate_lit_pipeline();
 
     VkDevice get_device() { return m_device->get_device(); }
     VkPhysicalDevice get_physical_device() { return m_device->get_physical_device(); }
@@ -97,7 +98,6 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
-    std::shared_ptr<gfx::VulkanPipeline> m_pipelineMesh;
 
     std::shared_ptr<gfx::Texture> m_loadedTexture;
     std::shared_ptr<gfx::Mesh> m_loadedMesh;

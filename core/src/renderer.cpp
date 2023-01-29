@@ -20,7 +20,6 @@ Renderer::Renderer(Engine& engine) : m_engine(engine) {
     m_renderPass = std::make_shared<gfx::VulkanRenderPass>(*this);
     m_commandQueue = std::make_shared<gfx::VulkanCommandQueue>(*this);
     m_descriptors = std::make_shared<gfx::VulkanDescriptors>(*this);
-    m_pipelineMesh = std::make_shared<gfx::VulkanPipeline>(*this);
 }
 
 // TODO: SHOULD BE MANAGED VIA MATERIAL and or SHADER
@@ -29,29 +28,33 @@ struct MeshPushConstants {
     glm::mat4 render_matrix;
 };
 
+std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
+    auto litPipeline = std::make_shared<gfx::VulkanPipeline>(*this);
+
+    auto triRedVertSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.vert.spv");
+    auto triRedFragSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.frag.spv");
+    gfx::VulkanShaderModules redTriangleShader(*this);
+    redTriangleShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
+    redTriangleShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
+
+    {
+        gfx::VertexInputDescription vertexDescription = gfx::Vertex::get_vertex_description();
+        litPipeline->add_stages(redTriangleShader);
+
+        VkPushConstantRange pushConstant;
+        pushConstant.offset = 0;
+        pushConstant.size = sizeof(MeshPushConstants);
+        pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        litPipeline->build(vertexDescription, pushConstant);
+    }
+
+    return litPipeline;
+}
+
 void Renderer::on_awake() {
     { m_loadedTexture = ResourceManager::load_texture("../res/textures/viking_room.png"); }
     { m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj"); }
-    {
-        // RES:SHADER
-        auto triRedVertSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.vert.spv");
-        auto triRedFragSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.frag.spv");
-        gfx::VulkanShaderModules redTriangleShader(*this);
-        redTriangleShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
-        redTriangleShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
-        {
-            // PIPELINE
-            gfx::VertexInputDescription vertexDescription = gfx::Vertex::get_vertex_description();
-            m_pipelineMesh->add_stages(redTriangleShader);
-
-            VkPushConstantRange pushConstant;
-            pushConstant.offset = 0;
-            pushConstant.size = sizeof(MeshPushConstants);
-            pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-            m_pipelineMesh->build(vertexDescription, pushConstant);
-        }
-    }
 }
 
 void Renderer::recreate_swap_chain() {
@@ -127,8 +130,8 @@ void Renderer::on_update(double deltaTime) {
             {
                 // TODO: We should only rebind our pipeline when it changes
                 //       (There is only 1 pipeline in use currently)
-                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineMesh->get_pipeline());
-                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipelineMesh->get_pipelineLayout(), 0,
+                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, ResourceManager::get_pipeline(gfx::PipelineTypes::Lit)->get_pipeline());
+                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, ResourceManager::get_pipeline(gfx::PipelineTypes::Lit)->get_pipelineLayout(), 0,
                                         1, &get_global_descriptor(), 0, nullptr);
                 // TODO:END
 
@@ -139,7 +142,7 @@ void Renderer::on_update(double deltaTime) {
                 tmpConstants.data = glm::vec4{0};
                 tmpConstants.render_matrix = meshMatrix;
 
-                vkCmdPushConstants(cmd, m_pipelineMesh->get_pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                vkCmdPushConstants(cmd, ResourceManager::get_pipeline(gfx::PipelineTypes::Lit)->get_pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                                    sizeof(MeshPushConstants), &tmpConstants);
 
                 vkCmdDraw(cmd, m_loadedMesh->vertices.size(), 1, 0, 0);
@@ -206,6 +209,7 @@ Renderer::~Renderer() {
 
     ResourceManager::free_textures();
     ResourceManager::free_meshes();
+    ResourceManager::free_pipelines();
 
     log::debug("Renderer destroyed");
 }

@@ -47,4 +47,5 @@ struct FrameData {
 
 constexpr unsigned int FRAME_OVERLAP_COUNT = 2;
 enum class ShaderType { Vertex, Fragment, LAST };
+enum class PipelineTypes { Lit, LAST };
 }  // namespace beet::gfx
