@@ -16,6 +16,7 @@
 
 #include <beet/asset_loader.h>
 #include <beet/log.h>
+#include <beet/material.h>
 #include <beet/subsystem.h>
 #include <beet/types.h>
 
@@ -99,8 +100,8 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
 
-    std::shared_ptr<gfx::Texture> m_loadedTexture;
     std::shared_ptr<gfx::Mesh> m_loadedMesh;
+    std::shared_ptr<Material> m_material;
 
    private:  // tmp
     float m_timePassed{0};

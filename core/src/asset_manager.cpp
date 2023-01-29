@@ -3,6 +3,8 @@
 #include <beet/renderer.h>
 #include <beet/resource_manager.h>
 
+#include <beet/gfx/types.h>
+#include <beet/gfx/vulkan_pipeline.h>
 #include <beet/gfx/vulkan_texture.h>
 
 namespace beet {
@@ -28,7 +30,7 @@ void ResourceManager::load_manual_textures() {
 
 void ResourceManager::generate_pipelines() {
     Renderer& renderer = Renderer::get_renderer().value().get();
-    m_pipelines[(size_t)gfx::PipelineTypes::Lit] = renderer.generate_lit_pipeline();
+    m_pipelines[(size_t)gfx::PipelineType::Lit] = renderer.generate_lit_pipeline();
 }
 
 std::optional<std::reference_wrapper<ResourceManager>> ResourceManager::get_resource_manager() {
@@ -46,9 +48,12 @@ std::shared_ptr<gfx::Texture> ResourceManager::load_texture_internal(const std::
 
     auto texture = std::make_shared<gfx::Texture>();
     texture->rawImage = AssetLoader::load_image(path);
+
     renderer.upload_texture(*texture);
+    renderer.create_image_view(*texture);
 
     m_textures[path] = texture;
+
     return texture;
 }
 
@@ -86,7 +91,7 @@ void ResourceManager::free_meshes_internal() {
     m_meshes.clear();
 }
 
-std::shared_ptr<gfx::VulkanPipeline> ResourceManager::get_pipeline_internal(const gfx::PipelineTypes& type) {
+std::shared_ptr<gfx::VulkanPipeline> ResourceManager::get_pipeline_internal(const gfx::PipelineType& type) {
     return m_pipelines[(size_t)type];
 }
 
@@ -106,7 +111,7 @@ void ResourceManager::free_pipelines() {
     return ResourceManager::get_resource_manager().value().get().free_pipelines_internal();
 }
 
-std::shared_ptr<gfx::VulkanPipeline> ResourceManager::get_pipeline(const gfx::PipelineTypes& type) {
+std::shared_ptr<gfx::VulkanPipeline> ResourceManager::get_pipeline(const gfx::PipelineType& type) {
     return ResourceManager::get_resource_manager().value().get().get_pipeline_internal(type);
 }
 

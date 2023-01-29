@@ -1,0 +1,44 @@
+#pragma once
+
+#include <memory>
+
+#include <beet/gfx/types.h>
+
+#include <beet/subsystem.h>
+#include <beet/types.h>
+
+namespace beet::gfx {
+class VulkanPipeline;
+struct Texture;
+}  // namespace beet::gfx
+
+namespace beet {
+
+class Material : public Subsystem {
+   public:
+    explicit Material(const gfx::PipelineType& type);
+    ~Material();
+
+    void on_awake() override;
+    void on_update(double deltaTime) override;
+    void on_late_update() override;
+    void on_destroy() override;
+
+    std::shared_ptr<gfx::VulkanPipeline> get_vulkan_pipeline();
+    vec4 get_albedo_color() { return m_albedoColor; };
+    vec2 get_texture_uv() { return m_textureUV; };
+
+    void set_albedo_texture(const std::shared_ptr<gfx::Texture>& texture);
+    void set_albedo_color(const vec4& color) { m_albedoColor = color; }
+    void set_texture_uv(const vec2& uv) { m_textureUV = uv; }
+
+   private:
+    gfx::PipelineType m_pipelineType;
+
+    std::shared_ptr<gfx::Texture> m_albedo;
+
+    vec4 m_albedoColor = vec4(1.0f);
+    vec2 m_textureUV = vec2(1.0f);
+};
+
+}  // namespace beet

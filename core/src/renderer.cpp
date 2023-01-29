@@ -53,7 +53,9 @@ std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
 }
 
 void Renderer::on_awake() {
-    { m_loadedTexture = ResourceManager::load_texture("../res/textures/viking_room.png"); }
+    m_material = std::make_shared<Material>(gfx::PipelineType::Lit);
+    m_material->set_albedo_texture(ResourceManager::load_texture("../res/textures/viking_room.png"));
+
     { m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj"); }
 }
 
@@ -128,11 +130,14 @@ void Renderer::on_update(double deltaTime) {
         {
             vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
             {
-                // TODO: We should only rebind our pipeline when it changes
-                //       (There is only 1 pipeline in use currently)
-                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, ResourceManager::get_pipeline(gfx::PipelineTypes::Lit)->get_pipeline());
-                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, ResourceManager::get_pipeline(gfx::PipelineTypes::Lit)->get_pipelineLayout(), 0,
-                                        1, &get_global_descriptor(), 0, nullptr);
+                // TODO:    replace with a query for all entities that are `LIT` if we do this we will only need to bind
+                //          the pipeline the first time that we use it as we know all subsequent entities will be `LIT`
+                auto pipeline = m_material->get_vulkan_pipeline()->get_pipeline();
+                auto pipelineLayout = m_material->get_vulkan_pipeline()->get_pipeline_layout();
+
+                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
+                                        &get_global_descriptor(), 0, nullptr);
                 // TODO:END
 
                 VkDeviceSize offset = 0;
@@ -142,8 +147,8 @@ void Renderer::on_update(double deltaTime) {
                 tmpConstants.data = glm::vec4{0};
                 tmpConstants.render_matrix = meshMatrix;
 
-                vkCmdPushConstants(cmd, ResourceManager::get_pipeline(gfx::PipelineTypes::Lit)->get_pipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                                   sizeof(MeshPushConstants), &tmpConstants);
+                vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
+                                   &tmpConstants);
 
                 vkCmdDraw(cmd, m_loadedMesh->vertices.size(), 1, 0, 0);
             }

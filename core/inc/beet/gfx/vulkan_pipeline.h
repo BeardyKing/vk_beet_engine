@@ -23,7 +23,7 @@ class VulkanPipeline {
     void add_stages(gfx::VulkanShaderModules& shaderModules);
     void build(const VertexInputDescription& vertexDescription, const VkPushConstantRange& pushConstantRange);
     VkPipeline& get_pipeline() { return m_pipeline; }
-    VkPipelineLayout& get_pipelineLayout() { return m_pipelineLayout; }
+    VkPipelineLayout& get_pipeline_layout() { return m_pipelineLayout; }
 
    private:
     std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;

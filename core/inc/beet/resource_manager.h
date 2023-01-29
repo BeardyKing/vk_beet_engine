@@ -6,8 +6,6 @@
 
 #include <flecs.h>
 
-#include <beet/gfx/vulkan_pipeline.h>
-#include <beet/gfx/types.h>
 #include <beet/log.h>
 #include <beet/subsystem.h>
 #include <beet/types.h>
@@ -16,6 +14,7 @@ namespace beet {
 class Engine;
 class Renderer;
 namespace gfx {
+class VulkanPipeline;
 struct Texture;
 struct Mesh;
 }  // namespace gfx
@@ -36,7 +35,7 @@ class ResourceManager : public Subsystem {
     static std::optional<std::reference_wrapper<ResourceManager>> get_resource_manager();
     static std::shared_ptr<gfx::Texture> load_texture(const std::string& path);
     static std::shared_ptr<gfx::Mesh> load_mesh(const std::string& path);
-    static std::shared_ptr<gfx::VulkanPipeline> get_pipeline(const gfx::PipelineTypes& type);
+    static std::shared_ptr<gfx::VulkanPipeline> get_pipeline(const gfx::PipelineType& type);
     static void free_textures();
     static void free_meshes();
     static void free_pipelines();
@@ -48,7 +47,7 @@ class ResourceManager : public Subsystem {
 
     std::shared_ptr<gfx::Texture> load_texture_internal(const std::string& path);
     std::shared_ptr<gfx::Mesh> load_mesh_internal(const std::string& path);
-    std::shared_ptr<gfx::VulkanPipeline> get_pipeline_internal(const gfx::PipelineTypes& type);
+    std::shared_ptr<gfx::VulkanPipeline> get_pipeline_internal(const gfx::PipelineType& type);
 
     void free_textures_internal();
     void free_meshes_internal();
@@ -59,7 +58,7 @@ class ResourceManager : public Subsystem {
 
     std::map<std::string, std::shared_ptr<gfx::Texture>> m_textures;
     std::map<std::string, std::shared_ptr<gfx::Mesh>> m_meshes;
-    std::array<std::shared_ptr<gfx::VulkanPipeline>, (size_t)gfx::PipelineTypes::LAST> m_pipelines;
+    std::array<std::shared_ptr<gfx::VulkanPipeline>, (size_t)gfx::PipelineType::LAST> m_pipelines;
 
     inline static std::optional<std::reference_wrapper<ResourceManager>> s_resourceManager = std::nullopt;
 };
