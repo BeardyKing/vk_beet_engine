@@ -24,6 +24,7 @@
 namespace beet {
 class Engine;
 class Transform;
+class Camera;
 }  // namespace beet
 
 namespace beet {
@@ -86,6 +87,7 @@ class Renderer : public Subsystem {
     VkSemaphore& get_render_semaphore() { return m_commandBuffer->get_render_semaphore(); }
     VkFence& get_render_fence() { return m_commandBuffer->get_render_fence(); }
     VkDescriptorSet& get_global_descriptor() { return m_commandBuffer->get_global_descriptor(); }
+    VkCommandBuffer& get_main_command_buffer() { return m_commandBuffer->get_main_command_buffer(); }
 
     VkDescriptorSetLayout get_global_descriptor_set() { return m_descriptors->get_global_descriptor_set(); }
 
@@ -105,6 +107,7 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::Mesh> m_loadedMesh;
     std::shared_ptr<Material> m_material;
     std::shared_ptr<Transform> m_transform;
+    std::shared_ptr<Camera> m_camera;
 };
 
 }  // namespace beet

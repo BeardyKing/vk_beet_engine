@@ -2,6 +2,7 @@
 #include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_texture.h>
 
+#include <beet/component/camera.h>
 #include <beet/component/transform.h>
 
 #include <beet/assert.h>
@@ -55,7 +56,8 @@ std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
 }
 
 void Renderer::on_awake() {
-    m_transform = std::make_shared<Transform>();
+    m_transform = std::make_shared<Transform>(vec3(0, -0.5, -2));
+    m_camera = std::make_shared<Camera>();
     m_material = std::make_shared<Material>(gfx::PipelineType::Lit);
     m_material->set_albedo_texture(ResourceManager::load_texture("../res/textures/viking_room.png"));
     m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj");
@@ -100,6 +102,13 @@ void Renderer::on_update(double deltaTime) {
     VkClearValue clearValues[] = {clearValue, depthClear};
     info.pClearValues = &clearValues[0];
 
+    auto window = m_engine.get_window_module().lock();
+    vec2u windowSize = window->get_window_size();
+    float aspectRatio = window->get_window_aspect_ratio();
+    VkExtent2D extent = {static_cast<uint32_t>(windowSize.x), static_cast<uint32_t>(windowSize.y)};
+    VkViewport viewport{0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f};
+    VkRect2D scissor{{0, 0}, {extent}};
+
     // TODO: This is painful and should really be managed by some class / components
     //       i.e. Camera/UpdateGlobalDescriptor
     //===MESH LOCAL===//
@@ -108,8 +117,7 @@ void Renderer::on_update(double deltaTime) {
     //===CAMERA===//
     glm::vec3 camPos = {0.f, -1.0f, -3.f};
     glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-    glm::mat4 projection = glm::perspective(glm::radians(70.f), 1700.f / 900.f, 0.1f, 200.0f);
-    projection[1][1] *= -1;
+    glm::mat4 projection = m_camera->get_projection(aspectRatio);
 
     gfx::GPUCameraData camData{};
     camData.proj = projection;
@@ -140,6 +148,10 @@ void Renderer::on_update(double deltaTime) {
                 vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
                                         &get_global_descriptor(), 0, nullptr);
                 // TODO:END
+                {
+                    vkCmdSetViewport(cmd, 0, 1, &viewport);
+                    vkCmdSetScissor(cmd, 0, 1, &scissor);
+                }
 
                 VkDeviceSize offset = 0;
                 vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh->vertexBuffer.buffer, &offset);

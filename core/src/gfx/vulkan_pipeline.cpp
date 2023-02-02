@@ -65,17 +65,6 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
     //===BUILD ASSEMBLY===//
     m_inputAssembly = init::input_assembly_create_info(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-    //===BUILD VIEWPORT===//
-    m_viewport.x = 0.0f;
-    m_viewport.y = 0.0f;
-    m_viewport.width = (float)size.x;
-    m_viewport.height = (float)size.y;
-    m_viewport.minDepth = 0.0f;
-    m_viewport.maxDepth = 1.0f;
-
-    m_scissor.offset = {0, 0};
-    m_scissor.extent = extent;
-
     //===BUILD RASTERIZATION===//
     m_rasterizer = init::rasterization_state_create_info(VK_POLYGON_MODE_FILL);
 
@@ -85,15 +74,20 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
     //===BUILD BLEND ATTACHMENT===//
     m_colorBlendAttachment = init::color_blend_attachment_state();
 
+    //===VIEWPORT===//
     VkPipelineViewportStateCreateInfo viewportState = {};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.pNext = nullptr;
-
     viewportState.viewportCount = 1;
-    viewportState.pViewports = &m_viewport;
     viewportState.scissorCount = 1;
-    viewportState.pScissors = &m_scissor;
 
+    VkDynamicState dynamicStates[] = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    VkPipelineDynamicStateCreateInfo dynamicState = {};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = 2;
+    dynamicState.pDynamicStates = dynamicStates;
+
+    //===BLENDING===//
     VkPipelineColorBlendStateCreateInfo colorBlending = {};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
     colorBlending.pNext = nullptr;
@@ -125,6 +119,7 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
     pipelineInfo.renderPass = renderPass;
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+    pipelineInfo.pDynamicState = &dynamicState;
 
     auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_pipeline);
     BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Failed to create graphics pipeline");

@@ -29,8 +29,6 @@ class VulkanPipeline {
     std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;
     VkPipelineVertexInputStateCreateInfo m_vertexInputInfo;
     VkPipelineInputAssemblyStateCreateInfo m_inputAssembly;
-    VkViewport m_viewport;
-    VkRect2D m_scissor;
     VkPipelineRasterizationStateCreateInfo m_rasterizer;
     VkPipelineColorBlendAttachmentState m_colorBlendAttachment;
     VkPipelineMultisampleStateCreateInfo m_multisampling;

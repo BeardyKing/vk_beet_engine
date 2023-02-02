@@ -162,25 +162,6 @@ void VulkanRenderPass::init_sync_structures() {
             BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create render semaphore");
         }
     }
-
-    //    VkFenceCreateInfo fenceCreateInfo = {};
-    //    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    //    fenceCreateInfo.pNext = nullptr;
-    //    fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    //    {
-    //        auto result = vkCreateFence(device, &fenceCreateInfo, nullptr, &m_renderFence);
-    //    }
-    //
-    //    VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-    //    semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    //    semaphoreCreateInfo.pNext = nullptr;
-    //    semaphoreCreateInfo.flags = 0;
-    //    {
-    //        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_presentSemaphore);
-    //    }
-    //    {
-    //        auto result = vkCreateSemaphore(device, &semaphoreCreateInfo, nullptr, &m_renderSemaphore);
-    //    }
 }
 void VulkanRenderPass::sync() {
     auto device = m_renderer.get_device();
