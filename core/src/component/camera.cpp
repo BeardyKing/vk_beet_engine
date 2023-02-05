@@ -2,7 +2,7 @@
 
 namespace beet {
 
-mat4 Camera::get_projection(float aspectRatio) {
+mat4 Camera::get_projection(float aspectRatio) const {
     auto projection = glm::perspective(glm::radians(m_fov), aspectRatio, m_zNear, m_zFar);
     projection[1][1] *= -1;
     return projection;

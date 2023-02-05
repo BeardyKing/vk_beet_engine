@@ -9,7 +9,15 @@
 #include <beet/asset_loader.h>
 #include <beet/engine.h>
 #include <beet/renderer.h>
+#include <beet/scene.h>
 #include <beet/types.h>
+
+namespace beet {
+struct DynamicViewport {
+    VkViewport viewport;
+    VkRect2D scissor;
+};
+}  // namespace beet
 
 namespace beet {
 
@@ -23,6 +31,10 @@ Renderer::Renderer(Engine& engine) : m_engine(engine) {
     m_renderPass = std::make_shared<gfx::VulkanRenderPass>(*this);
     m_commandQueue = std::make_shared<gfx::VulkanCommandQueue>(*this);
     m_descriptors = std::make_shared<gfx::VulkanDescriptors>(*this);
+
+    // TODO:    Create sampler class and add to the resource manager.
+    VkSamplerCreateInfo samplerInfo = gfx::init::sampler_create_info(VK_FILTER_LINEAR);
+    vkCreateSampler(m_device->get_device(), &samplerInfo, nullptr, &m_linearSampler);
 }
 
 // TODO: SHOULD BE MANAGED VIA MATERIAL and or SHADER
@@ -55,42 +67,7 @@ std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
     return litPipeline;
 }
 
-void Renderer::on_awake() {
-    m_transform = std::make_shared<Transform>(vec3(0, 0.25, 0.5));
-    m_camera = std::make_shared<Camera>();
-    m_material = std::make_shared<Material>(gfx::PipelineType::Lit);
-    m_material->set_albedo_texture(ResourceManager::load_texture("../res/textures/viking_room.png"));
-    m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj");
-
-    // TODO:    Create sampler class and add to the resource manager.
-    VkSamplerCreateInfo samplerInfo = gfx::init::sampler_create_info(VK_FILTER_LINEAR);
-    vkCreateSampler(m_device->get_device(), &samplerInfo, nullptr, &m_linearSampler);
-
-    // TODO:    Move into material class.
-    //          This code is needed to update the material descriptors whenever there is a change resource
-    //          i.e texture/value change. it is likely in release state that most resources would be static
-    //          but this is not the case when we are using the editor as we update resource values quite often.
-    //          any all cases we would want to defer updating the resource until the end of the fame so that
-    //          we don't cause any hitching when updating the descriptors :)
-
-    VkDescriptorSetAllocateInfo allocInfo = {};
-    allocInfo.pNext = nullptr;
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = m_descriptors->get_descriptor_pool();
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &m_descriptors->get_texture_descriptor_set();
-    vkAllocateDescriptorSets(m_device->get_device(), &allocInfo, m_material->get_texture_descriptor());
-
-    VkDescriptorImageInfo imageBufferInfo = {};
-    imageBufferInfo.sampler = m_linearSampler;
-    imageBufferInfo.imageView = m_material->get_texture()->imageView;
-    imageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    VkWriteDescriptorSet texture1 = gfx::init::write_descriptor_image(
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, *m_material->get_texture_descriptor(), &imageBufferInfo, 0);
-
-    vkUpdateDescriptorSets(m_device->get_device(), 1, &texture1, 0, nullptr);
-}
+void Renderer::on_awake() {}
 
 void Renderer::recreate_swap_chain() {
     auto window = m_engine.get_window_module().lock();
@@ -108,59 +85,23 @@ void Renderer::recreate_swap_chain() {
 }
 
 void Renderer::on_update(double deltaTime) {
-    VkClearValue clearValue;
-    VkClearValue depthClear;
-    clearValue.color = {{0.5f, 0.092, 0.167f, 1.0f}};
-    depthClear.depthStencil.depth = 1.f;
-
     render_sync();
     m_commandBuffer->reset();
 
     auto result = m_swapchain->acquire_next_image();
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreate_swap_chain();
+        //        recreate_swap_chain();
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         BEET_ASSERT_MESSAGE(BEET_FALSE, "failed to acquire swap chain image!");
         return;
     }
 
     auto info = m_renderPass->create_begin_info();
-    info.clearValueCount = 1;
-    info.pClearValues = &clearValue;
-    info.clearValueCount = 2;
-    VkClearValue clearValues[] = {clearValue, depthClear};
-    info.pClearValues = &clearValues[0];
+    set_clear_info(info);
 
-    auto window = m_engine.get_window_module().lock();
-    vec2u windowSize = window->get_window_size();
-    float aspectRatio = window->get_window_aspect_ratio();
-    VkExtent2D extent = {static_cast<uint32_t>(windowSize.x), static_cast<uint32_t>(windowSize.y)};
-    VkViewport viewport{0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f};
-    VkRect2D scissor{{0, 0}, {extent}};
+    auto dynamicViewport = update_viewport_scissor();
 
-    // TODO: This is painful and should really be managed by some class / components
-    //       i.e. Camera/UpdateGlobalDescriptor
-    //===MESH LOCAL===//
-    m_transform->rotate_euler(vec3{0, deltaTime * 20.0f, 0});
-
-    //===CAMERA===//
-    glm::vec3 camPos = {0.f, -1.0f, -3.f};
-    glm::mat4 view = glm::translate(glm::mat4(1.f), camPos);
-    glm::mat4 projection = m_camera->get_projection(aspectRatio);
-
-    gfx::GPUCameraData camData{};
-    camData.proj = projection;
-    camData.view = view;
-    camData.viewProj = projection * view;
-
-    //===CAMERA::UPDATE_GLOBAL_DESCRIPTOR===//
-    void* data;
-    auto allocator = m_buffer->get_allocator();
-    auto cameraBuffer = m_commandBuffer->get_camera_buffer();
-    vmaMapMemory(allocator, cameraBuffer.allocation, &data);
-    memcpy(data, &camData, sizeof(gfx::GPUCameraData));
-    vmaUnmapMemory(allocator, cameraBuffer.allocation);
-    //===EXIT HELL===//
+    update_camera_descriptor();
 
     auto cmd = m_commandBuffer->get_main_command_buffer();
     {
@@ -168,37 +109,41 @@ void Renderer::on_update(double deltaTime) {
         {
             vkCmdBeginRenderPass(cmd, &info, VK_SUBPASS_CONTENTS_INLINE);
             {
-                // TODO:    replace with a query for all entities that are `LIT` if we do this we will only need to bind
-                //          the pipeline the first time that we use it as we know all subsequent entities will be `LIT`
-                auto pipeline = m_material->get_vulkan_pipeline()->get_pipeline();
-                auto pipelineLayout = m_material->get_vulkan_pipeline()->get_pipeline_layout();
-
-                // TODO:END
                 {
-                    vkCmdSetViewport(cmd, 0, 1, &viewport);
-                    vkCmdSetScissor(cmd, 0, 1, &scissor);
+                    vkCmdSetViewport(cmd, 0, 1, &dynamicViewport.viewport);
+                    vkCmdSetScissor(cmd, 0, 1, &dynamicViewport.scissor);
                 }
                 {
+                    // TODO:    replace with a query for all entities that are `LIT` / other valid pipelines
+                    //          and then iterate overtime respectively.
+                    auto litPipeline = ResourceManager::get_pipeline(gfx::PipelineType::Lit).get();
+                    auto pipeline = litPipeline->get_pipeline();
+                    auto pipelineLayout = litPipeline->get_pipeline_layout();
                     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
                                             &get_global_descriptor(), 0, nullptr);
+                    // TODO:END
 
-                    VkDeviceSize offset = 0;
-                    vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh->vertexBuffer.buffer, &offset);
+                    auto world = Scene::get_world().get();
+                    world->each([cmd](flecs::entity e, const Transform& transform, const Material& material,
+                                      const std::shared_ptr<gfx::Mesh>& mesh) {
+                        auto layout = material.get_vulkan_pipeline()->get_pipeline_layout();
 
-                    MeshPushConstants tmpConstants{};
-                    tmpConstants.data = glm::vec4{0};
-                    tmpConstants.render_matrix = m_transform->get_model_matrix();
+                        VkDeviceSize offset = 0;
+                        vkCmdBindVertexBuffers(cmd, 0, 1, &mesh->vertexBuffer.buffer, &offset);
 
-                    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
-                                       &tmpConstants);
+                        MeshPushConstants tmpConstants{
+                            glm::vec4{0},
+                            transform.get_model_matrix(),
+                        };
 
-                    {
-                        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
-                                                m_material->get_texture_descriptor(), 0, nullptr);
-                    }
+                        vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
+                                           &tmpConstants);
 
-                    vkCmdDraw(cmd, m_loadedMesh->vertices.size(), 1, 0, 0);
+                        material.bind_descriptor(cmd);
+
+                        vkCmdDraw(cmd, mesh->vertices.size(), 1, 0, 0);
+                    });
                 }
             }
             vkCmdEndRenderPass(cmd);
@@ -210,6 +155,54 @@ void Renderer::on_update(double deltaTime) {
     m_commandQueue->submit();
     m_swapchain->present();
     m_commandBuffer->next_frame();
+}
+
+void Renderer::update_camera_descriptor() {
+    auto aspectRatio = m_engine.get_window_module().lock()->get_window_aspect_ratio();
+    auto buffer = m_buffer;
+    auto commandBuffer = m_commandBuffer;
+    auto world = Scene::get_world().get();
+
+    world->each(
+        [aspectRatio, buffer, commandBuffer](flecs::entity e, const Transform& transform, const Camera& camera) {
+            const vec3 position = transform.get_position();
+            const mat4 projection = camera.get_projection(aspectRatio);
+            const mat4 view = lookAt(position, camera.get_look_target(), transform.up());
+            const mat4 viewProjection = projection * view;
+
+            const gfx::GPUCameraData camData{projection, view, viewProjection};
+
+            //===CAMERA::UPDATE_GLOBAL_DESCRIPTOR===//
+            void* data;
+            auto allocator = buffer->get_allocator();
+            auto cameraBuffer = commandBuffer->get_camera_buffer();
+            vmaMapMemory(allocator, cameraBuffer.allocation, &data);
+            memcpy(data, &camData, sizeof(gfx::GPUCameraData));
+            vmaUnmapMemory(allocator, cameraBuffer.allocation);
+        });
+}
+
+void Renderer::set_clear_info(VkRenderPassBeginInfo& info) {
+    VkClearValue clearValue;
+    VkClearValue depthClear;
+    clearValue.color = {{0.5f, 0.092, 0.167f, 1.0f}};
+    depthClear.depthStencil.depth = 1.0f;
+
+    info.clearValueCount = 1;
+    info.pClearValues = &clearValue;
+    info.clearValueCount = 2;
+    static VkClearValue clearValues[2] = {clearValue, depthClear};
+    info.pClearValues = &clearValues[0];
+}
+
+DynamicViewport Renderer::update_viewport_scissor() {
+    vec2u windowSize = m_engine.get_window_module().lock()->get_window_size();
+    VkExtent2D extent = {static_cast<uint32_t>(windowSize.x), static_cast<uint32_t>(windowSize.y)};
+
+    return DynamicViewport{
+        {0.0f, 0.0f, (float)extent.width, (float)extent.height, 0.0f, 1.0f},
+        {{0, 0}, {extent}},
+    };
 }
 
 void Renderer::on_late_update() {}

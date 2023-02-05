@@ -25,6 +25,7 @@ namespace beet {
 class Engine;
 class Transform;
 class Camera;
+struct DynamicViewport;
 }  // namespace beet
 
 namespace beet {
@@ -92,6 +93,15 @@ class Renderer : public Subsystem {
     VkDescriptorSetLayout& get_global_descriptor_set() { return m_descriptors->get_global_descriptor_set(); }
     VkDescriptorSetLayout& get_texture_descriptor_set() { return m_descriptors->get_texture_descriptor_set(); }
 
+    // TODO: REPLACE WITH SAMPLER IN RES MANAGER
+    VkSampler get_linear_sampler() { return m_linearSampler; };
+    VkDescriptorPool get_descriptor_pool() { return m_descriptors->get_descriptor_pool(); }
+
+   private:
+    void update_camera_descriptor();
+    void set_clear_info(VkRenderPassBeginInfo& info);
+    DynamicViewport update_viewport_scissor();
+
    private:
     Engine& m_engine;
     inline static std::optional<std::reference_wrapper<Renderer>> s_renderer = std::nullopt;
@@ -105,13 +115,7 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
 
-    std::shared_ptr<gfx::Mesh> m_loadedMesh;
-    std::shared_ptr<Material> m_material;
-    std::shared_ptr<Transform> m_transform;
-    std::shared_ptr<Camera> m_camera;
-
-//    VkDescriptorSet textureID{VK_NULL_HANDLE};
-    VkSampler m_linearSampler;
+    VkSampler m_linearSampler = {};
 };
 
 }  // namespace beet

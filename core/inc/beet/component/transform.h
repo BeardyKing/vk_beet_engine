@@ -22,7 +22,7 @@ class Transform {
 
     void rotate_euler(const vec3& rotation);
 
-    mat4 get_model_matrix();
+    mat4 get_model_matrix() const;
 
     vec3 forward() const;
     vec3 up() const;

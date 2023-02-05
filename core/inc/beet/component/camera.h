@@ -8,12 +8,12 @@ class Camera {
     Camera() = default;
     ~Camera() = default;
 
-    vec3 get_look_target() { return m_lookTarget; };
-    float get_fov() { return radians(m_fov); };
-    float get_z_near() { return m_zNear; };
-    float get_z_far() { return m_zFar; };
+    vec3 get_look_target() const { return m_lookTarget; };
+    float get_fov() const { return radians(m_fov); };
+    float get_z_near() const { return m_zNear; };
+    float get_z_far() const { return m_zFar; };
 
-    mat4 get_projection(float aspectRatio);
+    mat4 get_projection(float aspectRatio) const;
 
     vec3 world_up();
 
