@@ -14,7 +14,8 @@ class VulkanDescriptors {
     VulkanDescriptors(Renderer& renderer);
     ~VulkanDescriptors();
 
-    VkDescriptorSetLayout get_global_descriptor_set() { return m_globalSetLayout; }
+    VkDescriptorSetLayout& get_global_descriptor_set() { return m_globalSetLayout; }
+    VkDescriptorSetLayout& get_texture_descriptor_set() { return m_textureLayout; }
     VkDescriptorPool get_descriptor_pool() { return m_descriptorPool; }
 
    private:
@@ -22,6 +23,7 @@ class VulkanDescriptors {
 
    private:
     VkDescriptorSetLayout m_globalSetLayout;
+    VkDescriptorSetLayout m_textureLayout;
     VkDescriptorPool m_descriptorPool;
 
    private:

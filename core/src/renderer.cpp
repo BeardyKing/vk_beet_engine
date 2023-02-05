@@ -56,11 +56,40 @@ std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
 }
 
 void Renderer::on_awake() {
-    m_transform = std::make_shared<Transform>(vec3(0, -0.5, -2));
+    m_transform = std::make_shared<Transform>(vec3(0, 0.25, 0.5));
     m_camera = std::make_shared<Camera>();
     m_material = std::make_shared<Material>(gfx::PipelineType::Lit);
     m_material->set_albedo_texture(ResourceManager::load_texture("../res/textures/viking_room.png"));
     m_loadedMesh = ResourceManager::load_mesh("../res/misc/viking_room.obj");
+
+    // TODO:    Create sampler class and add to the resource manager.
+    VkSamplerCreateInfo samplerInfo = gfx::init::sampler_create_info(VK_FILTER_LINEAR);
+    vkCreateSampler(m_device->get_device(), &samplerInfo, nullptr, &m_linearSampler);
+
+    // TODO:    Move into material class.
+    //          This code is needed to update the material descriptors whenever there is a change resource
+    //          i.e texture/value change. it is likely in release state that most resources would be static
+    //          but this is not the case when we are using the editor as we update resource values quite often.
+    //          any all cases we would want to defer updating the resource until the end of the fame so that
+    //          we don't cause any hitching when updating the descriptors :)
+
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.pNext = nullptr;
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = m_descriptors->get_descriptor_pool();
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &m_descriptors->get_texture_descriptor_set();
+    vkAllocateDescriptorSets(m_device->get_device(), &allocInfo, m_material->get_texture_descriptor());
+
+    VkDescriptorImageInfo imageBufferInfo = {};
+    imageBufferInfo.sampler = m_linearSampler;
+    imageBufferInfo.imageView = m_material->get_texture()->imageView;
+    imageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+    VkWriteDescriptorSet texture1 = gfx::init::write_descriptor_image(
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, *m_material->get_texture_descriptor(), &imageBufferInfo, 0);
+
+    vkUpdateDescriptorSets(m_device->get_device(), 1, &texture1, 0, nullptr);
 }
 
 void Renderer::recreate_swap_chain() {
@@ -144,26 +173,33 @@ void Renderer::on_update(double deltaTime) {
                 auto pipeline = m_material->get_vulkan_pipeline()->get_pipeline();
                 auto pipelineLayout = m_material->get_vulkan_pipeline()->get_pipeline_layout();
 
-                vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-                vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-                                        &get_global_descriptor(), 0, nullptr);
                 // TODO:END
                 {
                     vkCmdSetViewport(cmd, 0, 1, &viewport);
                     vkCmdSetScissor(cmd, 0, 1, &scissor);
                 }
+                {
+                    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+                    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
+                                            &get_global_descriptor(), 0, nullptr);
 
-                VkDeviceSize offset = 0;
-                vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh->vertexBuffer.buffer, &offset);
+                    VkDeviceSize offset = 0;
+                    vkCmdBindVertexBuffers(cmd, 0, 1, &m_loadedMesh->vertexBuffer.buffer, &offset);
 
-                MeshPushConstants tmpConstants{};
-                tmpConstants.data = glm::vec4{0};
-                tmpConstants.render_matrix = m_transform->get_model_matrix();
+                    MeshPushConstants tmpConstants{};
+                    tmpConstants.data = glm::vec4{0};
+                    tmpConstants.render_matrix = m_transform->get_model_matrix();
 
-                vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
-                                   &tmpConstants);
+                    vkCmdPushConstants(cmd, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
+                                       &tmpConstants);
 
-                vkCmdDraw(cmd, m_loadedMesh->vertices.size(), 1, 0, 0);
+                    {
+                        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 1, 1,
+                                                m_material->get_texture_descriptor(), 0, nullptr);
+                    }
+
+                    vkCmdDraw(cmd, m_loadedMesh->vertices.size(), 1, 0, 0);
+                }
             }
             vkCmdEndRenderPass(cmd);
         }
@@ -226,6 +262,8 @@ Renderer::~Renderer() {
     ResourceManager::free_textures();
     ResourceManager::free_meshes();
     ResourceManager::free_pipelines();
+
+    vkDestroySampler(m_device->get_device(), m_linearSampler, nullptr);
 
     log::debug("Renderer destroyed");
 }

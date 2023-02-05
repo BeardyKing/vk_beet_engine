@@ -27,6 +27,8 @@ class Material : public Subsystem {
     std::shared_ptr<gfx::VulkanPipeline> get_vulkan_pipeline();
     vec4 get_albedo_color() { return m_albedoColor; };
     vec2 get_texture_uv() { return m_textureUV; };
+    std::shared_ptr<gfx::Texture> get_texture() { return m_albedo; }      // TODO: REMOVE ONLY FOR TESTING
+    VkDescriptorSet* get_texture_descriptor() { return &m_textureSets; }  // TODO: REMOVE ONLY FOR TESTING
 
     void set_albedo_texture(const std::shared_ptr<gfx::Texture>& texture);
     void set_albedo_color(const vec4& color) { m_albedoColor = color; }
@@ -36,6 +38,7 @@ class Material : public Subsystem {
     gfx::PipelineType m_pipelineType;
 
     std::shared_ptr<gfx::Texture> m_albedo;
+    VkDescriptorSet m_textureSets = {VK_NULL_HANDLE};
 
     vec4 m_albedoColor = vec4(1.0f);
     vec2 m_textureUV = vec2(1.0f);

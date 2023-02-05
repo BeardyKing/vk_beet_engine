@@ -45,4 +45,21 @@ VkSemaphoreCreateInfo semaphore_create_info(VkSemaphoreCreateFlags flags);
 
 VkCommandBufferBeginInfo command_buffer_begin_info(VkCommandBufferUsageFlags flags = 0);
 
+VkDescriptorSetLayoutBinding descriptorset_layout_binding(VkDescriptorType type,
+                                                          VkShaderStageFlags stageFlags,
+                                                          uint32_t binding);
+
+VkWriteDescriptorSet write_descriptor_buffer(VkDescriptorType type,
+                                             VkDescriptorSet dstSet,
+                                             VkDescriptorBufferInfo* bufferInfo,
+                                             uint32_t binding);
+
+VkSamplerCreateInfo sampler_create_info(VkFilter filters,
+                                        VkSamplerAddressMode samplerAddressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT);
+
+VkWriteDescriptorSet write_descriptor_image(VkDescriptorType type,
+                                            VkDescriptorSet dstSet,
+                                            VkDescriptorImageInfo* imageInfo,
+                                            uint32_t binding);
+
 }  // namespace beet::gfx::init

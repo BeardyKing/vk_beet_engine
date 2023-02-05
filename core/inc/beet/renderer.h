@@ -89,7 +89,8 @@ class Renderer : public Subsystem {
     VkDescriptorSet& get_global_descriptor() { return m_commandBuffer->get_global_descriptor(); }
     VkCommandBuffer& get_main_command_buffer() { return m_commandBuffer->get_main_command_buffer(); }
 
-    VkDescriptorSetLayout get_global_descriptor_set() { return m_descriptors->get_global_descriptor_set(); }
+    VkDescriptorSetLayout& get_global_descriptor_set() { return m_descriptors->get_global_descriptor_set(); }
+    VkDescriptorSetLayout& get_texture_descriptor_set() { return m_descriptors->get_texture_descriptor_set(); }
 
    private:
     Engine& m_engine;
@@ -108,6 +109,9 @@ class Renderer : public Subsystem {
     std::shared_ptr<Material> m_material;
     std::shared_ptr<Transform> m_transform;
     std::shared_ptr<Camera> m_camera;
+
+//    VkDescriptorSet textureID{VK_NULL_HANDLE};
+    VkSampler m_linearSampler;
 };
 
 }  // namespace beet
