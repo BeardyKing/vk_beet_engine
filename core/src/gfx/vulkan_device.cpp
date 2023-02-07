@@ -1,4 +1,5 @@
 #include <beet/gfx/vulkan_device.h>
+
 #include <beet/gfx/vulkan_initializers.h>
 
 #include <beet/assert.h>
@@ -36,7 +37,7 @@ void VulkanDevice::init_vulkan() {
     m_instance = vkb_inst.instance;
     m_debugMessenger = vkb_inst.debug_messenger;
 
-    m_renderer.get_engine().get_window_module().lock()->create_surface(m_instance, m_surface);
+    Window::create_surface(m_instance, m_surface);
 
     vkb::PhysicalDeviceSelector selector{vkb_inst};
     vkb::PhysicalDevice physicalDevice = selector.set_minimum_version(1, 1).set_surface(m_surface).select().value();
@@ -50,6 +51,5 @@ void VulkanDevice::init_vulkan() {
     m_graphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
     m_graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
 }
-
 
 }  // namespace beet::gfx

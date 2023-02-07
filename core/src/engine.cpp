@@ -4,7 +4,7 @@ namespace beet {
 
 Engine::Engine() {
     m_windowModule = std::make_shared<Window>(1024, 768, "vk_beetroot", *this);
-    m_rendererModule = std::make_shared<Renderer>(*this);
+    m_rendererModule = std::make_shared<Renderer>();
     m_resourceModule = std::make_shared<ResourceManager>(*this);
     m_sceneModule = std::make_shared<Scene>(*this);
 

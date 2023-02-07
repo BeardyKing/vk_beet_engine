@@ -1,11 +1,15 @@
-#include <beet/assert.h>
 #include <beet/gfx/vulkan_buffer.h>
+
+#include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_mesh.h>
-#include <beet/renderer.h>
+
 #define VMA_IMPLEMENTATION
-#include <beet/log.h>
 #include "vk_mem_alloc.h"
+
+#include <beet/assert.h>
+#include <beet/log.h>
+#include <beet/renderer.h>
 
 namespace beet::gfx {
 VulkanBuffer::VulkanBuffer(Renderer& renderer) : m_renderer(renderer) {

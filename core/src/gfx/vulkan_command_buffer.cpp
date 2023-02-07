@@ -1,4 +1,5 @@
 #include <beet/gfx/vulkan_command_buffer.h>
+#include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_initializers.h>
 
 #include <beet/assert.h>

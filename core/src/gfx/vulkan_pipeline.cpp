@@ -1,12 +1,15 @@
 #include <beet/gfx/vulkan_pipeline.h>
 
+#include <beet/gfx/vulkan_descriptors.h>
+#include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_initializers.h>
+#include <beet/gfx/vulkan_mesh.h>
+#include <beet/gfx/vulkan_render_pass.h>
+#include <beet/gfx/vulkan_shader_modules.h>
+
 #include <beet/assert.h>
 #include <beet/engine.h>
 #include <beet/renderer.h>
-
-#include <beet/gfx/vulkan_initializers.h>
-#include <beet/gfx/vulkan_mesh.h>
-#include <beet/gfx/vulkan_shader_modules.h>
 
 namespace beet::gfx {
 
@@ -38,7 +41,7 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
     auto device = m_renderer.get_vulkan_device()->get_device();
     auto renderPass = m_renderer.get_vulkan_render_pass()->get_render_pass();
 
-    auto size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
+    auto size = Window::get_size();
     VkExtent2D extent = {static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)};
 
     //===BUILD PIPELINE INFO===//

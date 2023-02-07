@@ -1,16 +1,28 @@
+#include <beet/renderer.h>
+
+#include <beet/gfx/vulkan_buffer.h>
+#include <beet/gfx/vulkan_command_buffer.h>
+#include <beet/gfx/vulkan_command_queue.h>
+#include <beet/gfx/vulkan_descriptors.h>
 #include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_initializers.h>
+#include <beet/gfx/vulkan_mesh.h>
+#include <beet/gfx/vulkan_pipeline.h>
+#include <beet/gfx/vulkan_render_pass.h>
+#include <beet/gfx/vulkan_shader_modules.h>
+#include <beet/gfx/vulkan_swapchain.h>
 #include <beet/gfx/vulkan_texture.h>
 
 #include <beet/component/camera.h>
+#include <beet/component/material.h>
 #include <beet/component/transform.h>
 
 #include <beet/assert.h>
 #include <beet/asset_loader.h>
-#include <beet/engine.h>
-#include <beet/renderer.h>
+#include <beet/resource_manager.h>
 #include <beet/scene.h>
 #include <beet/types.h>
+#include <beet/window.h>
 
 namespace beet {
 struct DynamicViewport {
@@ -21,7 +33,7 @@ struct DynamicViewport {
 
 namespace beet {
 
-Renderer::Renderer(Engine& engine) : m_engine(engine) {
+Renderer::Renderer() {
     s_renderer = std::ref(*this);
 
     m_device = std::make_shared<gfx::VulkanDevice>(*this);
@@ -70,11 +82,11 @@ std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
 void Renderer::on_awake() {}
 
 void Renderer::recreate_swap_chain() {
-    auto window = m_engine.get_window_module().lock();
+    Window& window = Window::get_window().value().get();
     vec2i size{0};
     while (!size.x || !size.y) {
-        window->get_framebuffer_size(size);
-        window->wait_events();
+        window.get_framebuffer_size(size);
+        window.wait_events();
     }
 
     wait_idle();
@@ -159,7 +171,7 @@ void Renderer::on_update(double deltaTime) {
 }
 
 void Renderer::update_camera_descriptor() {
-    auto aspectRatio = m_engine.get_window_module().lock()->get_window_aspect_ratio();
+    auto aspectRatio = Window::get_aspect_ratio();
     auto buffer = m_buffer;
     auto commandBuffer = m_commandBuffer;
     auto world = Scene::get_world().get();
@@ -197,7 +209,7 @@ void Renderer::set_clear_info(VkRenderPassBeginInfo& info) {
 }
 
 DynamicViewport Renderer::update_viewport_scissor() {
-    vec2u windowSize = m_engine.get_window_module().lock()->get_window_size();
+    vec2u windowSize = Window::get_size();
     VkExtent2D extent = {static_cast<uint32_t>(windowSize.x), static_cast<uint32_t>(windowSize.y)};
 
     return DynamicViewport{
@@ -263,5 +275,10 @@ Renderer::~Renderer() {
 
     log::debug("Renderer destroyed");
 }
-
+void Renderer::wait_idle() {
+    m_device->wait_idle();
+}
+void Renderer::render_sync() {
+    m_renderPass->sync();
+}
 }  // namespace beet

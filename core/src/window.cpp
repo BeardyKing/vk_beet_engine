@@ -18,17 +18,18 @@ Window::Window(int width, int height, const std::string& title, Engine& engine)
       m_window(nullptr),
       m_engine(engine),
       m_input(std::make_shared<InputManager>(*this)) {
-    glfwInit();
+    s_window = std::ref(*this);
 
+    glfwInit();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
-    m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
+    m_window = glfwCreateWindow((int)m_width, (int)m_height, m_title.c_str(), nullptr, nullptr);
     glfwSetWindowSizeLimits(m_window, 128, 128, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     BEET_ASSERT_MESSAGE(m_window, "Failed to create GLFW window");
     log::debug("GLFW initialized");
 
-    glfwSetWindowMonitor(m_window, nullptr, 0, WINDOWS_TITLE_BAR_SIZE, m_width, m_height, 1);
+    glfwSetWindowMonitor(m_window, nullptr, 0, WINDOWS_TITLE_BAR_SIZE, (int)m_width, (int)m_height, 1);
     glfwMakeContextCurrent(m_window);
 }
 
@@ -187,33 +188,45 @@ void Window::set_cursor_hide(bool state) {
     glfwSetInputMode(m_window, GLFW_CURSOR, state ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
 
-std::shared_ptr<InputManager> Window::get_input_manager() {
-    return m_input;
+void Window::wait_events() {
+    glfwWaitEvents();
 }
 
-const char** Window::get_extensions(uint32_t& extensionCount) {
-    return glfwGetRequiredInstanceExtensions(&extensionCount);
+vec2u Window::get_window_size_internal() {
+    return vec2u{m_width, m_height};
+};
+
+float Window::get_window_aspect_ratio_internal() {
+    return (float)m_width / (float)m_height;
 }
 
-void Window::create_surface(VkInstance& instance, VkSurfaceKHR& surface) {
-    VkResult windowResult = glfwCreateWindowSurface(instance, m_window, nullptr, &surface);
-    BEET_ASSERT_MESSAGE(windowResult == VK_SUCCESS, "failed to create window surface!");
-}
-
-void Window::get_framebuffer_size(int& width, int& height) {
-    glfwGetFramebufferSize(m_window, &width, &height);
-    m_width = width;
-    m_height = height;
-}
-
-void Window::get_framebuffer_size(vec2i& size) {
+void Window::get_framebuffer_size_internal(vec2i& size) {
     glfwGetFramebufferSize(m_window, &size.x, &size.y);
     m_width = size.x;
     m_height = size.y;
 }
 
-void Window::wait_events() {
-    glfwWaitEvents();
+void Window::create_surface_internal(VkInstance& instance, VkSurfaceKHR& surface) {
+    VkResult windowResult = glfwCreateWindowSurface(instance, m_window, nullptr, &surface);
+    BEET_ASSERT_MESSAGE(windowResult == VK_SUCCESS, "failed to create window surface!");
+}
+
+std::optional<std::reference_wrapper<Window>> Window::get_window() {
+    BEET_ASSERT_MESSAGE(s_window.has_value(), "Window does not exist")
+    return s_window;
+}
+
+vec2u Window::get_size() {
+    return get_window().value().get().get_window_size_internal();
+}
+float Window::get_aspect_ratio() {
+    return get_window().value().get().get_window_aspect_ratio_internal();
+}
+void Window::get_framebuffer_size(vec2i& size) {
+    get_window().value().get().get_framebuffer_size_internal(size);
+}
+void Window::create_surface(VkInstance& instance, VkSurfaceKHR& surface) {
+    get_window().value().get().create_surface_internal(instance, surface);
 }
 
 }  // namespace beet

@@ -1,42 +1,39 @@
 #pragma once
 
-#include <optional>
-
-#include <beet/gfx/vulkan_buffer.h>
-#include <beet/gfx/vulkan_command_buffer.h>
-#include <beet/gfx/vulkan_command_queue.h>
-#include <beet/gfx/vulkan_descriptors.h>
-#include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_mesh.h>
-#include <beet/gfx/vulkan_pipeline.h>
-#include <beet/gfx/vulkan_render_pass.h>
-#include <beet/gfx/vulkan_shader_modules.h>
-#include <beet/gfx/vulkan_swapchain.h>
 #include <beet/gfx/vulkan_texture.h>
-
-#include <beet/component/material.h>
 
 #include <beet/asset_loader.h>
 #include <beet/log.h>
 #include <beet/subsystem.h>
 #include <beet/types.h>
 
+#include <optional>
+
 namespace beet {
-class Engine;
-class Transform;
-class Camera;
 struct DynamicViewport;
+namespace gfx {
+struct VulkanDevice;
+struct VulkanBuffer;
+struct VulkanDescriptors;
+struct VulkanSwapchain;
+struct VulkanCommandBuffer;
+struct VulkanRenderPass;
+struct VulkanCommandQueue;
+struct Mesh;
+struct Texture;
+class VulkanPipeline;
+}  // namespace gfx
 }  // namespace beet
 
 namespace beet {
 
 class Renderer : public Subsystem {
    public:
-    explicit Renderer(Engine& engine);
+    explicit Renderer();
     ~Renderer();
 
     static std::optional<std::reference_wrapper<Renderer>> get_renderer();
-    Engine& get_engine() { return m_engine; }
 
     void on_awake() override;
     void on_update(double deltaTime) override;
@@ -44,8 +41,8 @@ class Renderer : public Subsystem {
     void on_destroy() override;
 
     void recreate_swap_chain();
-    void wait_idle() { m_device->wait_idle(); }
-    void render_sync() { m_renderPass->sync(); }
+    void wait_idle();
+    void render_sync();
 
     std::shared_ptr<gfx::VulkanDevice> get_vulkan_device() { return m_device; };
     std::shared_ptr<gfx::VulkanBuffer> get_vulkan_buffer() { return m_buffer; };
@@ -72,7 +69,6 @@ class Renderer : public Subsystem {
     DynamicViewport update_viewport_scissor();
 
    private:
-    Engine& m_engine;
     inline static std::optional<std::reference_wrapper<Renderer>> s_renderer = std::nullopt;
 
    private:

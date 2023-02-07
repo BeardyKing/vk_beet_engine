@@ -4,7 +4,9 @@
 
 #include <beet/input_manager.h>
 #include <beet/subsystem.h>
+
 #include <memory>
+#include <optional>
 #include <string>
 
 namespace beet {
@@ -19,35 +21,38 @@ class Window : public Subsystem {
     Window(int width, int height, const std::string& title, Engine& engine);
     ~Window();
 
+    static std::optional<std::reference_wrapper<Window>> get_window();
+    GLFWwindow* get_glfw_window() { return m_window; };
+
     void on_awake() override;
     void on_update(double deltaTime) override;
     void on_late_update() override;
     void on_destroy() override;
 
+    static vec2u get_size();
+    static float get_aspect_ratio();
+    static void get_framebuffer_size(vec2i& size);
+    static void create_surface(VkInstance& instance, VkSurfaceKHR& surface);
+
+    void wait_events();
     void swap_frame();
+
+    void set_cursor_hide(bool state);
+    void toggle_fullscreen();
     bool is_open();
     void close();
-    void calculate_delta_time();
     double get_delta_time();
 
-    uint32_t get_window_width() { return m_width; };
-    uint32_t get_window_height() { return m_height; };
-    vec2u get_window_size() { return vec2u{m_width, m_height}; };
-    float get_window_aspect_ratio() { return (float)m_width / (float)m_height; }
+   private:
+    void calculate_delta_time();
+    void toggle_fullscreen_internal();
 
-    void toggle_fullscreen();
-    void set_cursor_hide(bool state);
+    vec2u get_window_size_internal();
+    float get_window_aspect_ratio_internal();
+    void get_framebuffer_size_internal(vec2i& size);
+    void create_surface_internal(VkInstance& instance, VkSurfaceKHR& surface);
 
-    std::shared_ptr<InputManager> get_input_manager();
-    GLFWwindow* get_glfw_window() { return m_window; };
-    const char** get_extensions(uint32_t& extensionCount);
-    void create_surface(VkInstance& instance, VkSurfaceKHR& surface);
-
-    void get_framebuffer_size(int& width, int& height);
-    void get_framebuffer_size(vec2i& size);
-    void wait_events();
-
-   protected:
+   private:
     void setup_callbacks();
 
     static void window_size_callback(GLFWwindow* window, int width, int height);
@@ -57,9 +62,8 @@ class Window : public Subsystem {
     static void window_scroll_event(GLFWwindow* window, double xoffset, double yoffset);
     static void window_mouse_event_callback(GLFWwindow* window, double x, double y);
     static void window_cursor_enter_event_callback(GLFWwindow* window, int entered);
-    void toggle_fullscreen_internal();
 
-   protected:
+   private:
     uint32_t m_width;
     uint32_t m_height;
     std::string m_title;
@@ -75,6 +79,9 @@ class Window : public Subsystem {
 
     GLFWwindow* m_window;
     Engine& m_engine;
+
+    inline static std::optional<std::reference_wrapper<Window>> s_window = std::nullopt;
+
     std::shared_ptr<InputManager> m_input;
 };
 

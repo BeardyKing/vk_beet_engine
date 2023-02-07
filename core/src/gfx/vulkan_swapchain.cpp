@@ -1,3 +1,6 @@
+#include <beet/gfx/vulkan_swapchain.h>
+
+#include <beet/gfx/vulkan_command_buffer.h>
 #include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_initializers.h>
 #include <beet/gfx/vulkan_swapchain.h>
@@ -40,7 +43,7 @@ void VulkanSwapchain::recreate() {
 }
 
 void VulkanSwapchain::init_swapchain() {
-    const vec2u extent = m_renderer.get_engine().get_window_module().lock()->get_window_size();
+    const vec2u extent = Window::get_size();
 
     auto vulkanDevice = m_renderer.get_vulkan_device();
     auto device = vulkanDevice->get_device();

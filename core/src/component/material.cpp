@@ -1,7 +1,10 @@
 #include <beet/component/material.h>
 
 #include <beet/gfx/types.h>
+#include <beet/gfx/vulkan_descriptors.h>
+#include <beet/gfx/vulkan_device.h>
 #include <beet/gfx/vulkan_initializers.h>
+#include <beet/gfx/vulkan_pipeline.h>
 
 #include <beet/assert.h>
 #include <beet/log.h>

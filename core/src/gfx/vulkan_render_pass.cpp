@@ -1,7 +1,12 @@
+#include <beet/gfx/vulkan_render_pass.h>
+
+#include <beet/gfx/vulkan_command_buffer.h>
+#include <beet/gfx/vulkan_device.h>
+#include <beet/gfx/vulkan_initializers.h>
+#include <beet/gfx/vulkan_swapchain.h>
+
 #include <beet/assert.h>
 #include <beet/engine.h>
-#include <beet/gfx/vulkan_initializers.h>
-#include <beet/gfx/vulkan_render_pass.h>
 #include <beet/log.h>
 #include <beet/renderer.h>
 
@@ -113,7 +118,7 @@ void VulkanRenderPass::init_default_renderpass() {
 }
 
 void VulkanRenderPass::init_framebuffers() {
-    const vec2u extent = m_renderer.get_engine().get_window_module().lock()->get_window_size();
+    const vec2u extent = Window::get_size();
     auto device = m_renderer.get_vulkan_device()->get_device();
     auto swapchain = m_renderer.get_vulkan_swapchain();
 
@@ -146,6 +151,7 @@ void VulkanRenderPass::init_framebuffers() {
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create framebuffers");
     }
 }
+
 void VulkanRenderPass::init_sync_structures() {
     auto device = m_renderer.get_vulkan_device()->get_device();
 
@@ -167,6 +173,7 @@ void VulkanRenderPass::init_sync_structures() {
         }
     }
 }
+
 void VulkanRenderPass::sync() {
     auto device = m_renderer.get_vulkan_device()->get_device();
     auto& renderFence = m_renderer.get_vulkan_command_buffer()->get_render_fence();
@@ -179,9 +186,10 @@ void VulkanRenderPass::sync() {
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed reset render fence");
     }
 }
+
 VkRenderPassBeginInfo VulkanRenderPass::create_begin_info() {
     auto idx = m_renderer.get_vulkan_swapchain()->get_swapchain_index();
-    const vec2u size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
+    const vec2u size = Window::get_size();
     VkExtent2D extent{size.x, size.y};
 
     auto info = init::renderpass_begin_info(m_renderPass, extent, m_framebuffers[idx]);

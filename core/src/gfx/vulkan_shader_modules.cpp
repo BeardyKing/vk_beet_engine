@@ -1,5 +1,7 @@
 #include <beet/gfx/vulkan_shader_modules.h>
 
+#include <beet/gfx/vulkan_device.h>
+
 #include <beet/assert.h>
 #include <beet/log.h>
 #include <beet/renderer.h>
