@@ -13,7 +13,7 @@ VulkanCommandBuffer::~VulkanCommandBuffer() {
     cleanup();
 
     for (auto& frame : m_frames) {
-        m_renderer.destroy_buffer(frame.cameraBuffer);
+        m_renderer.get_vulkan_buffer()->destroy_buffer(frame.cameraBuffer);
     }
 
     log::debug("VulkanCommandBuffer destroyed");
@@ -25,7 +25,7 @@ void VulkanCommandBuffer::recreate() {
 }
 
 void VulkanCommandBuffer::cleanup() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     for (auto& frame : m_frames) {
         vkDestroyCommandPool(device, frame.commandPool, nullptr);
@@ -39,8 +39,9 @@ void VulkanCommandBuffer::cleanup() {
 }
 
 void VulkanCommandBuffer::init_commands() {
-    auto device = m_renderer.get_device();
-    auto queueFamily = m_renderer.get_queue_family();
+    auto vulkanDevice = m_renderer.get_vulkan_device();
+    auto device = vulkanDevice->get_device();
+    auto queueFamily = vulkanDevice->get_queue_family();
 
     VkCommandPoolCreateInfo commandPoolInfo =
         init::command_pool_create_info(queueFamily, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);

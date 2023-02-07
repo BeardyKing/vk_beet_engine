@@ -36,15 +36,24 @@ class Renderer : public Subsystem {
     ~Renderer();
 
     static std::optional<std::reference_wrapper<Renderer>> get_renderer();
+    Engine& get_engine() { return m_engine; }
 
     void on_awake() override;
     void on_update(double deltaTime) override;
     void on_late_update() override;
     void on_destroy() override;
 
-    Engine& get_engine() { return m_engine; }
-
     void recreate_swap_chain();
+    void wait_idle() { m_device->wait_idle(); }
+    void render_sync() { m_renderPass->sync(); }
+
+    std::shared_ptr<gfx::VulkanDevice> get_vulkan_device() { return m_device; };
+    std::shared_ptr<gfx::VulkanBuffer> get_vulkan_buffer() { return m_buffer; };
+    std::shared_ptr<gfx::VulkanDescriptors> get_vulkan_descriptor() { return m_descriptors; };
+    std::shared_ptr<gfx::VulkanSwapchain> get_vulkan_swapchain() { return m_swapchain; };
+    std::shared_ptr<gfx::VulkanCommandBuffer> get_vulkan_command_buffer() { return m_commandBuffer; };
+    std::shared_ptr<gfx::VulkanRenderPass> get_vulkan_render_pass() { return m_renderPass; };
+    std::shared_ptr<gfx::VulkanCommandQueue> get_vulkan_command_queue() { return m_commandQueue; };
 
     // TODO: VK UTIL FUNCTIONS MOVE TO UTIL CLASS
     void upload_texture(gfx::Texture& texture);
@@ -54,48 +63,8 @@ class Renderer : public Subsystem {
     void upload_mesh(gfx::Mesh& mesh);
     void destroy_mesh(gfx::Mesh& mesh);
     std::shared_ptr<gfx::VulkanPipeline> generate_lit_pipeline();
-
-    VkDevice get_device() { return m_device->get_device(); }
-    VkPhysicalDevice get_physical_device() { return m_device->get_physical_device(); }
-    VkSurfaceKHR get_surface() { return m_device->get_surface(); }
-    VkQueue get_queue() { return m_device->get_queue(); }
-    uint32_t get_queue_family() { return m_device->get_queue_family(); }
-    VkQueue get_graphics_queue() { return m_device->get_queue(); }
-    VkInstance get_instance() { return m_device->get_instance(); }
-    void wait_idle() { m_device->wait_idle(); }
-
-    VkSwapchainKHR get_swapchain() { return m_swapchain->get_swapchain(); }
-    VkFormat get_swapchain_image_format() { return m_swapchain->get_swapchain_image_format(); }
-    std::vector<VkImage> get_swapchain_images() { return m_swapchain->get_swapchain_images(); }
-    std::vector<VkImageView> get_swapchain_image_views() { return m_swapchain->get_swapchain_image_views(); }
-    VkImageView get_depth_image_view() { return m_swapchain->get_depth_image_view(); }
-    uint32_t get_swapchain_index() { return m_swapchain->get_swapchain_index(); }
-    VkFormat get_depth_format() { return m_swapchain->get_depth_format(); }
-
-    void render_sync() { m_renderPass->sync(); }
-    VkRenderPass get_render_pass() { return m_renderPass->get_render_pass(); }
-
-    // TODO: VULKAN BUFFER FUNCTIONS SHOULD PROBABLY BE STATIC.
-    //       UNLESS WE PASS THE BUFFER OBJECT AROUND INSTEAD.
-    VmaAllocator get_allocator() { return m_buffer->get_allocator(); }
-    gfx::AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage) {
-        return m_buffer->create_buffer(allocSize, usage, memoryUsage);
-    }
-    void destroy_buffer(gfx::AllocatedBuffer allocBuffer) { m_buffer->destroy_buffer(allocBuffer); }
-
-    std::array<gfx::FrameData, gfx::FRAME_OVERLAP_COUNT>& get_frame_data() { return m_commandBuffer->get_frames(); }
-    VkSemaphore& get_present_semaphore() { return m_commandBuffer->get_present_semaphore(); }
-    VkSemaphore& get_render_semaphore() { return m_commandBuffer->get_render_semaphore(); }
-    VkFence& get_render_fence() { return m_commandBuffer->get_render_fence(); }
-    VkDescriptorSet& get_global_descriptor() { return m_commandBuffer->get_global_descriptor(); }
-    VkCommandBuffer& get_main_command_buffer() { return m_commandBuffer->get_main_command_buffer(); }
-
-    VkDescriptorSetLayout& get_global_descriptor_set() { return m_descriptors->get_global_descriptor_set(); }
-    VkDescriptorSetLayout& get_texture_descriptor_set() { return m_descriptors->get_texture_descriptor_set(); }
-
     // TODO: REPLACE WITH SAMPLER IN RES MANAGER
     VkSampler get_linear_sampler() { return m_linearSampler; };
-    VkDescriptorPool get_descriptor_pool() { return m_descriptors->get_descriptor_pool(); }
 
    private:
     void update_camera_descriptor();

@@ -19,7 +19,7 @@ VulkanRenderPass::~VulkanRenderPass() {
 }
 
 void VulkanRenderPass::cleanup() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
     vkDeviceWaitIdle(device);
     vkDestroyRenderPass(device, m_renderPass, nullptr);
 
@@ -37,9 +37,11 @@ void VulkanRenderPass::recreate() {
 }
 
 void VulkanRenderPass::init_default_renderpass() {
-    auto imageFormat = m_renderer.get_swapchain_image_format();
-    auto device = m_renderer.get_device();
-    auto depthFormat = m_renderer.get_depth_format();
+    auto device = m_renderer.get_vulkan_device()->get_device();
+
+    auto swapchain = m_renderer.get_vulkan_swapchain();
+    auto imageFormat = swapchain->get_swapchain_image_format();
+    auto depthFormat = swapchain->get_depth_format();
 
     VkAttachmentDescription color_attachment = {};
     color_attachment.format = imageFormat;
@@ -112,10 +114,12 @@ void VulkanRenderPass::init_default_renderpass() {
 
 void VulkanRenderPass::init_framebuffers() {
     const vec2u extent = m_renderer.get_engine().get_window_module().lock()->get_window_size();
-    auto device = m_renderer.get_device();
-    auto swapchainImages = m_renderer.get_swapchain_images();
-    auto swapchainImageViews = m_renderer.get_swapchain_image_views();
-    auto depthImageView = m_renderer.get_depth_image_view();
+    auto device = m_renderer.get_vulkan_device()->get_device();
+    auto swapchain = m_renderer.get_vulkan_swapchain();
+
+    auto swapchainImages = swapchain->get_swapchain_images();
+    auto swapchainImageViews = swapchain->get_swapchain_image_views();
+    auto depthImageView = swapchain->get_depth_image_view();
 
     VkFramebufferCreateInfo fb_info = {};
     fb_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -143,12 +147,12 @@ void VulkanRenderPass::init_framebuffers() {
     }
 }
 void VulkanRenderPass::init_sync_structures() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     VkFenceCreateInfo fenceCreateInfo = init::fence_create_info(VK_FENCE_CREATE_SIGNALED_BIT);
     VkSemaphoreCreateInfo semaphoreCreateInfo = init::semaphore_create_info(0);
 
-    for (auto& frame : m_renderer.get_frame_data()) {
+    for (auto& frame : m_renderer.get_vulkan_command_buffer()->get_frame_data()) {
         {
             auto result = vkCreateFence(device, &fenceCreateInfo, nullptr, &frame.renderFence);
             BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed create fence");
@@ -164,9 +168,8 @@ void VulkanRenderPass::init_sync_structures() {
     }
 }
 void VulkanRenderPass::sync() {
-    auto device = m_renderer.get_device();
-    auto& renderFence = m_renderer.get_render_fence();
-
+    auto device = m_renderer.get_vulkan_device()->get_device();
+    auto& renderFence = m_renderer.get_vulkan_command_buffer()->get_render_fence();
     {
         auto result = vkWaitForFences(device, 1, &renderFence, true, 1000000000);
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed wait for render fence");
@@ -177,7 +180,7 @@ void VulkanRenderPass::sync() {
     }
 }
 VkRenderPassBeginInfo VulkanRenderPass::create_begin_info() {
-    auto idx = m_renderer.get_swapchain_index();
+    auto idx = m_renderer.get_vulkan_swapchain()->get_swapchain_index();
     const vec2u size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
     VkExtent2D extent{size.x, size.y};
 

@@ -13,7 +13,7 @@ namespace beet::gfx {
 VulkanPipeline::VulkanPipeline(Renderer& renderer) : m_renderer(renderer) {}
 
 VulkanPipeline::~VulkanPipeline() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     vkDestroyPipeline(device, m_pipeline, nullptr);
     vkDestroyPipelineLayout(device, m_pipelineLayout, nullptr);
@@ -35,13 +35,15 @@ void VulkanPipeline::add_stages(gfx::VulkanShaderModules& shaderModules) {
 
 void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
                            const VkPushConstantRange& pushConstantRange) {
-    auto renderPass = m_renderer.get_render_pass();
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
+    auto renderPass = m_renderer.get_vulkan_render_pass()->get_render_pass();
+
     auto size = m_renderer.get_engine().get_window_module().lock()->get_window_size();
     VkExtent2D extent = {static_cast<uint32_t>(size.x), static_cast<uint32_t>(size.y)};
 
     //===BUILD PIPELINE INFO===//
-    VkDescriptorSetLayout descriptorLayouts[2] = {m_renderer.get_global_descriptor_set(), m_renderer.get_texture_descriptor_set()};
+    VkDescriptorSetLayout descriptorLayouts[2] = {m_renderer.get_vulkan_descriptor()->get_global_descriptor_set(),
+                                                  m_renderer.get_vulkan_descriptor()->get_texture_descriptor_set()};
     VkPipelineLayoutCreateInfo pipeline_layout_info = init::pipeline_layout_create_info();
     pipeline_layout_info.pPushConstantRanges = &pushConstantRange;
     pipeline_layout_info.pushConstantRangeCount = 1;  // FIXME:   Only supports 1 stage at this time.

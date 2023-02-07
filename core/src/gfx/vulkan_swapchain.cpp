@@ -21,8 +21,8 @@ VulkanSwapchain::~VulkanSwapchain() {
 }
 
 void VulkanSwapchain::cleanup() {
-    auto device = m_renderer.get_device();
-    auto allocator = m_renderer.get_allocator();
+    auto device = m_renderer.get_vulkan_device()->get_device();
+    auto allocator = m_renderer.get_vulkan_buffer()->get_allocator();
 
     vkDestroySwapchainKHR(device, m_swapchain, nullptr);
 
@@ -41,9 +41,11 @@ void VulkanSwapchain::recreate() {
 
 void VulkanSwapchain::init_swapchain() {
     const vec2u extent = m_renderer.get_engine().get_window_module().lock()->get_window_size();
-    auto device = m_renderer.get_device();
-    auto physicalDevice = m_renderer.get_physical_device();
-    auto surface = m_renderer.get_surface();
+
+    auto vulkanDevice = m_renderer.get_vulkan_device();
+    auto device = vulkanDevice->get_device();
+    auto physicalDevice = vulkanDevice->get_physical_device();
+    auto surface = vulkanDevice->get_surface();
 
     vkb::SwapchainBuilder swapchainBuilder{physicalDevice, device, surface};
     vkb::Swapchain vkbSwapchain = swapchainBuilder.use_default_format_selection()
@@ -67,7 +69,7 @@ void VulkanSwapchain::init_swapchain() {
     depthImageAllocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
     depthImageAllocInfo.requiredFlags = VkMemoryPropertyFlags(VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    auto allocator = m_renderer.get_allocator();
+    auto allocator = m_renderer.get_vulkan_buffer()->get_allocator();
     auto resultAlloc = vmaCreateImage(allocator, &depthImageInfo, &depthImageAllocInfo, &m_depthImage.image,
                                       &m_depthImage.allocation, nullptr);
 
@@ -80,8 +82,8 @@ void VulkanSwapchain::init_swapchain() {
 }
 
 VkResult VulkanSwapchain::acquire_next_image() {
-    auto device = m_renderer.get_device();
-    auto semaphore = m_renderer.get_present_semaphore();
+    auto device = m_renderer.get_vulkan_device()->get_device();
+    auto semaphore = m_renderer.get_vulkan_command_buffer()->get_present_semaphore();
 
     auto result = vkAcquireNextImageKHR(device, m_swapchain, 1000000000, semaphore, VK_NULL_HANDLE, &m_swapchainIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -92,8 +94,8 @@ VkResult VulkanSwapchain::acquire_next_image() {
 }
 
 void VulkanSwapchain::present() {
-    auto graphicsQueue = m_renderer.get_graphics_queue();
-    auto renderSemaphore = m_renderer.get_render_semaphore();
+    auto graphicsQueue = m_renderer.get_vulkan_device()->get_graphics_queue();
+    auto renderSemaphore = m_renderer.get_vulkan_command_buffer()->get_render_semaphore();
 
     VkPresentInfoKHR presentInfo = init::present_info();
     presentInfo.pSwapchains = &m_swapchain;

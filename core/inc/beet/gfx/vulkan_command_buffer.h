@@ -30,7 +30,7 @@ class VulkanCommandBuffer {
     AllocatedBuffer& get_camera_buffer() { return m_frames[m_currentFrame].cameraBuffer; }
     VkDescriptorSet& get_global_descriptor() { return m_frames[m_currentFrame].globalDescriptor; }
 
-    std::array<FrameData, FRAME_OVERLAP_COUNT>& get_frames() { return m_frames; }
+    std::array<FrameData, FRAME_OVERLAP_COUNT>& get_frame_data() { return m_frames; }
 
    private:
     void init_commands();

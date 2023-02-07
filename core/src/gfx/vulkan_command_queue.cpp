@@ -14,10 +14,10 @@ void VulkanCommandQueue::add_command(VkCommandBuffer cmd) {
 }
 
 void VulkanCommandQueue::submit() {
-    auto presentSemaphore = m_renderer.get_present_semaphore();
-    auto renderSemaphore = m_renderer.get_render_semaphore();
-    auto renderFence = m_renderer.get_render_fence();
-    auto graphicsQueue = m_renderer.get_graphics_queue();
+    auto presentSemaphore = m_renderer.get_vulkan_command_buffer()->get_present_semaphore();
+    auto renderSemaphore = m_renderer.get_vulkan_command_buffer()->get_render_semaphore();
+    auto renderFence = m_renderer.get_vulkan_command_buffer()->get_render_fence();
+    auto graphicsQueue = m_renderer.get_vulkan_device()->get_graphics_queue();
 
     for (auto& cmd : m_commandQueue) {
         VkSubmitInfo submit = gfx::init::submit_info(&cmd);

@@ -9,10 +9,12 @@
 
 namespace beet::gfx {
 VulkanBuffer::VulkanBuffer(Renderer& renderer) : m_renderer(renderer) {
+    auto vulkanDevice = m_renderer.get_vulkan_device();
+
     VmaAllocatorCreateInfo allocatorInfo = {};
-    allocatorInfo.physicalDevice = m_renderer.get_physical_device();
-    allocatorInfo.device = m_renderer.get_device();
-    allocatorInfo.instance = m_renderer.get_instance();
+    allocatorInfo.physicalDevice = vulkanDevice->get_physical_device();
+    allocatorInfo.device = vulkanDevice->get_device();
+    allocatorInfo.instance = vulkanDevice->get_instance();
     vmaCreateAllocator(&allocatorInfo, &m_allocator);
 
     init_immediate_commands();
@@ -142,7 +144,6 @@ void VulkanBuffer::upload_texture(Texture& texture) {
 
     vmaDestroyBuffer(m_allocator, stagingBuffer.buffer, stagingBuffer.allocation);
     texture.image = newImage;
-
 }
 
 void VulkanBuffer::destroy_texture(Texture& texture) {
@@ -150,7 +151,7 @@ void VulkanBuffer::destroy_texture(Texture& texture) {
 }
 
 VulkanBuffer::~VulkanBuffer() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     vmaDestroyAllocator(m_allocator);
     vkDestroyCommandPool(device, m_uploadContext.commandPool, nullptr);
@@ -182,9 +183,9 @@ void VulkanBuffer::destroy_buffer(AllocatedBuffer allocBuffer) {
 }
 
 void VulkanBuffer::init_immediate_commands() {
-    auto device = m_renderer.get_device();
-    auto graphicsQueue = m_renderer.get_graphics_queue();
-    auto queueFamily = m_renderer.get_queue_family();
+    auto vulkanDevice = m_renderer.get_vulkan_device();
+    auto device = vulkanDevice->get_device();
+    auto queueFamily = vulkanDevice->get_queue_family();
 
     VkCommandPoolCreateInfo uploadCommandPoolInfo = init::command_pool_create_info(queueFamily);
     {
@@ -206,8 +207,9 @@ void VulkanBuffer::init_immediate_commands() {
 }
 
 void VulkanBuffer::immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function) {
-    auto device = m_renderer.get_device();
-    auto graphicsQueue = m_renderer.get_graphics_queue();
+    auto vulkanDevice = m_renderer.get_vulkan_device();
+    auto device = vulkanDevice->get_device();
+    auto graphicsQueue = vulkanDevice->get_graphics_queue();
 
     VkCommandBuffer cmd = m_uploadContext.commandBuffer;
     VkCommandBufferBeginInfo cmdBeginInfo =

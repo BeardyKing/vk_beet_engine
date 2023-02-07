@@ -41,10 +41,10 @@ void Material::set_pipeline_type(const gfx::PipelineType& type) {
 //          we don't cause any hitching when updating the descriptors :)
 void Material::update_material_descriptor() {
     Renderer& renderer = Renderer::get_renderer().value().get();
-    auto device = renderer.get_device();
+    auto device = renderer.get_vulkan_device()->get_device();
     auto linearSampler = renderer.get_linear_sampler();
-    auto descriptorPools = renderer.get_descriptor_pool();
-    auto textureDescriptorSet = renderer.get_texture_descriptor_set();
+    auto descriptorPools = renderer.get_vulkan_descriptor()->get_descriptor_pool();
+    auto textureDescriptorSet = renderer.get_vulkan_descriptor()->get_texture_descriptor_set();
 
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.pNext = nullptr;

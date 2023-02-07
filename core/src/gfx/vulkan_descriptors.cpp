@@ -12,7 +12,7 @@ VulkanDescriptors::VulkanDescriptors(Renderer& renderer) : m_renderer(renderer) 
 }
 
 VulkanDescriptors::~VulkanDescriptors() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     // TODO: managed getting descriptors via enum instead of having individual functions.
     vkDestroyDescriptorSetLayout(device, m_textureLayout, nullptr);
@@ -23,7 +23,7 @@ VulkanDescriptors::~VulkanDescriptors() {
 }
 
 void VulkanDescriptors::init_descriptors() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     {
         std::vector<VkDescriptorPoolSize> sizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
@@ -71,9 +71,9 @@ void VulkanDescriptors::init_descriptors() {
         BEET_ASSERT_MESSAGE(resultLayout == VK_SUCCESS, "Error: Vulkan failed to create descriptor set layout texture");
     }
     {
-        for (auto& frame : m_renderer.get_frame_data()) {
-            frame.cameraBuffer = m_renderer.create_buffer(sizeof(GPUCameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-                                                          VMA_MEMORY_USAGE_CPU_TO_GPU);
+        for (auto& frame : m_renderer.get_vulkan_command_buffer()->get_frame_data()) {
+            frame.cameraBuffer = m_renderer.get_vulkan_buffer()->create_buffer(
+                sizeof(GPUCameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
 
             VkDescriptorSetAllocateInfo allocInfo = {};
             allocInfo.pNext = nullptr;

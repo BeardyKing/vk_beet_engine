@@ -119,9 +119,10 @@ void Renderer::on_update(double deltaTime) {
                     auto litPipeline = ResourceManager::get_pipeline(gfx::PipelineType::Lit).get();
                     auto pipeline = litPipeline->get_pipeline();
                     auto pipelineLayout = litPipeline->get_pipeline_layout();
+                    auto globalDescriptor = get_vulkan_command_buffer()->get_global_descriptor();
                     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
                     vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-                                            &get_global_descriptor(), 0, nullptr);
+                                            &globalDescriptor, 0, nullptr);
                     // TODO:END
 
                     auto world = Scene::get_world().get();
@@ -220,13 +221,15 @@ void Renderer::upload_texture(gfx::Texture& texture) {
 }
 
 void Renderer::create_image_view(gfx::Texture& texture) {
+    auto device = get_vulkan_device()->get_device();
     VkImageViewCreateInfo imageInfo =
         gfx::init::imageview_create_info(texture.rawImage.format, texture.image.image, VK_IMAGE_ASPECT_COLOR_BIT);
-    vkCreateImageView(get_device(), &imageInfo, nullptr, &texture.imageView);
+    vkCreateImageView(device, &imageInfo, nullptr, &texture.imageView);
 }
 
 void Renderer::destroy_image_view(gfx::Texture& texture) {
-    vkDestroyImageView(get_device(), texture.imageView, nullptr);
+    auto device = get_vulkan_device()->get_device();
+    vkDestroyImageView(device, texture.imageView, nullptr);
 }
 
 void Renderer::upload_mesh(gfx::Mesh& mesh) {
@@ -245,7 +248,7 @@ std::optional<std::reference_wrapper<Renderer>> Renderer::get_renderer() {
 
 Renderer::~Renderer() {
     // TODO:    This is a bit of a hack we just render out as many frames as we have buffered command buffers
-    for (auto& frame : get_frame_data()) {
+    for (auto& frame : get_vulkan_command_buffer()->get_frame_data()) {
         render_sync();
         m_commandBuffer->reset();
         m_swapchain->acquire_next_image();

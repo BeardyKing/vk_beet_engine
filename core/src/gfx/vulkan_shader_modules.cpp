@@ -9,7 +9,7 @@ namespace beet::gfx {
 VulkanShaderModules::VulkanShaderModules(Renderer& renderer) : m_renderer(renderer) {}
 
 VulkanShaderModules::~VulkanShaderModules() {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     for (auto& module : m_shaderModules) {
         if (module.shader != VK_NULL_HANDLE) {
@@ -29,7 +29,7 @@ void VulkanShaderModules::load(const std::vector<char>& src, ShaderType shaderTy
 }
 
 VkShaderModule VulkanShaderModules::create_shader_module(const std::vector<char>& src) {
-    auto device = m_renderer.get_device();
+    auto device = m_renderer.get_vulkan_device()->get_device();
 
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
