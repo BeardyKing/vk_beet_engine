@@ -97,7 +97,9 @@ void VulkanBuffer::upload_texture(Texture& texture) {
     AllocatedImage newImage;
 
     VmaAllocationCreateInfo dimg_allocinfo = {};
-    dimg_allocinfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    dimg_allocinfo.usage = VMA_MEMORY_USAGE_AUTO;
+    dimg_allocinfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+    dimg_allocinfo.priority = 1.0f;
 
     vmaCreateImage(m_allocator, &dimg_info, &dimg_allocinfo, &newImage.image, &newImage.allocation, nullptr);
 

@@ -4,6 +4,7 @@
 #include <beet/resource_manager.h>
 
 #include <beet/gfx/types.h>
+#include <beet/gfx/vulkan_command_buffer.h>
 #include <beet/gfx/vulkan_pipeline.h>
 #include <beet/gfx/vulkan_texture.h>
 
@@ -25,7 +26,13 @@ void ResourceManager::load_resources_manual() {
 }
 
 void ResourceManager::load_manual_textures() {
-    load_texture("../res/textures/viking_room.png");
+    load_texture_internal("../res/textures/viking_room.png");
+    load_texture_internal("../res/textures/UV_Grid_test.png");
+
+    load_texture_internal("../res/textures/Cerberus/Cerberus_A.jpg");
+    load_texture_internal("../res/textures/Cerberus/Cerberus_M.jpg");
+    load_texture_internal("../res/textures/Cerberus/Cerberus_N.jpg");
+    load_texture_internal("../res/textures/Cerberus/Cerberus_R.jpg");
 }
 
 void ResourceManager::generate_pipelines() {
@@ -53,6 +60,8 @@ std::shared_ptr<gfx::Texture> ResourceManager::load_texture_internal(const std::
     renderer.create_image_view(*texture);
 
     m_textures[path] = texture;
+
+    log::info("uploaded texture: {}", path);
 
     return texture;
 }

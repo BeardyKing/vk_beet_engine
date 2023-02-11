@@ -12,12 +12,7 @@
 namespace beet {
 
 Window::Window(int width, int height, const std::string& title, Engine& engine)
-    : m_width(width),
-      m_height(height),
-      m_title(title),
-      m_window(nullptr),
-      m_engine(engine),
-      m_input(std::make_shared<InputManager>(*this)) {
+    : m_width(width), m_height(height), m_title(title), m_window(nullptr), m_engine(engine) {
     s_window = std::ref(*this);
 
     glfwInit();
@@ -42,11 +37,14 @@ void Window::on_awake() {
 }
 
 void Window::window_size_callback(GLFWwindow* window, int width, int height) {
+    auto& renderer = Renderer::get_renderer().value().get();
     auto* self = (Window*)glfwGetWindowUserPointer(window);
+
     vec2i size{width, height};
     self->m_width = size.x;
     self->m_height = size.y;
-    self->m_engine.get_renderer_module().lock()->recreate_swap_chain();
+
+    renderer.recreate_swap_chain();
 }
 
 bool Window::is_open() {
@@ -70,11 +68,9 @@ void Window::on_update(double deltaTime) {
 }
 
 void Window::toggle_fullscreen() {
-    if (m_input->key_on_trigger(KeyCode::LeftAlt) && m_input->key_on_trigger(KeyCode::Enter) && !keysDown) {
+    auto& input = Input::get_input().value().get();
+    if (input.key_held_down(KeyCode::LeftAlt) && input.key_on_trigger(KeyCode::Enter)) {
         toggle_fullscreen_internal();
-        keysDown = true;
-    } else if (!m_input->key_pressed(KeyCode::LeftAlt) || !m_input->key_pressed(KeyCode::Enter)) {
-        keysDown = false;
     }
 }
 
@@ -145,47 +141,11 @@ void Window::swap_frame() {
 void Window::setup_callbacks() {
     glfwSetWindowSizeCallback(m_window, Window::window_size_callback);
 
-    glfwSetKeyCallback(m_window, Window::window_key_callback);
-    glfwSetCharCallback(m_window, Window::window_char_callback);
-    glfwSetMouseButtonCallback(m_window, Window::window_mouse_button_callback);
-    glfwSetScrollCallback(m_window, Window::window_scroll_event);
-    glfwSetCursorPosCallback(m_window, Window::window_mouse_event_callback);
-}
-
-void Window::window_key_callback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
-    if (action != GLFW_REPEAT) {
-        self->m_input->key_event(key, action != GLFW_RELEASE);
-    }
-}
-
-void Window::window_char_callback(GLFWwindow* window, unsigned int codepoint) {
-    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
-}
-
-void Window::window_mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
-    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
-    self->m_input->mouse_button_event(button, action != GLFW_RELEASE);
-}
-
-void Window::window_scroll_event(GLFWwindow* window, double xoffset, double yoffset) {
-    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
-    self->m_input->scroll_event({xoffset, yoffset});
-}
-
-void Window::window_mouse_event_callback(GLFWwindow* window, double x, double y) {
-    if (!glfwGetWindowAttrib(window, GLFW_HOVERED))
-        return;
-    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
-    self->m_input->mouse_event(x, y);
-}
-
-void Window::window_cursor_enter_event_callback(GLFWwindow* window, int entered) {
-    Window* self = static_cast<Window*>(glfwGetWindowUserPointer(window));
-}
-
-void Window::set_cursor_hide(bool state) {
-    glfwSetInputMode(m_window, GLFW_CURSOR, state ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
+    //    glfwSetKeyCallback(m_window, Window::window_key_callback);
+    //    glfwSetCharCallback(m_window, Window::window_char_callback);
+    //    glfwSetMouseButtonCallback(m_window, Window::window_mouse_button_callback);
+    //    glfwSetScrollCallback(m_window, Window::window_scroll_event);
+    //    glfwSetCursorPosCallback(m_window, Window::window_mouse_event_callback);
 }
 
 void Window::wait_events() {

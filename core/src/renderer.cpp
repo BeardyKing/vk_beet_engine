@@ -95,14 +95,17 @@ void Renderer::recreate_swap_chain() {
     m_swapchain->recreate();
     m_renderPass->recreate();
 }
-
+bool dirtyOnRender = false;
+bool dirtyOnFirstRender = false;
 void Renderer::on_update(double deltaTime) {
     render_sync();
     m_commandBuffer->reset();
 
+
+
     auto result = m_swapchain->acquire_next_image();
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        //        recreate_swap_chain();
+        recreate_swap_chain();
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         BEET_ASSERT_MESSAGE(BEET_FALSE, "failed to acquire swap chain image!");
         return;

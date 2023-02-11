@@ -8,7 +8,7 @@ class Transform {
    public:
     explicit Transform(const vec3& position = vec3(0.0f),
                        const vec3& scale = vec3(1.0f),
-                       const vec3& rotation = vec4(0));
+                       const vec3& rotation = vec3(0));
 
     vec3 get_position() const;
     vec3 get_scale() const;
@@ -19,8 +19,6 @@ class Transform {
     void set_scale(const vec3& scale);
     void set_rotation(const quat& rotation);
     void set_rotation_euler(const vec3& rotation);
-
-    void rotate_euler(const vec3& rotation);
 
     mat4 get_model_matrix() const;
 

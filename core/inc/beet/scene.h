@@ -1,6 +1,8 @@
 #pragma once
 
 #include <beet/subsystem.h>
+#include <optional>
+#include <memory>
 
 #include "flecs.h"
 

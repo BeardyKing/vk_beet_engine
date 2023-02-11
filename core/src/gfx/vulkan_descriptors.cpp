@@ -60,15 +60,25 @@ void VulkanDescriptors::init_descriptors() {
         BEET_ASSERT_MESSAGE(resultLayout == VK_SUCCESS, "Error: Vulkan failed to create descriptor set layout");
     }
     {
-        VkDescriptorSetLayoutBinding textureBind = init::descriptorset_layout_binding(
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+        std::array<VkDescriptorSetLayoutBinding, 5> textureBindings{
+            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                               0),
+            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                               1),
+            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                               2),
+            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                               3),
+            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
+                                               4),
+        };
 
         VkDescriptorSetLayoutCreateInfo setInfo = {};
-        setInfo.bindingCount = 1;
+        setInfo.bindingCount = (uint32_t)textureBindings.size();
         setInfo.flags = 0;
         setInfo.pNext = nullptr;
         setInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        setInfo.pBindings = &textureBind;
+        setInfo.pBindings = textureBindings.data();
 
         auto resultLayout = vkCreateDescriptorSetLayout(device, &setInfo, nullptr, &m_textureLayout);
         BEET_ASSERT_MESSAGE(resultLayout == VK_SUCCESS, "Error: Vulkan failed to create descriptor set layout texture");

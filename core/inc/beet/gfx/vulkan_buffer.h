@@ -39,6 +39,7 @@ class VulkanBuffer {
 
    private:
     Renderer& m_renderer;
+    std::vector<std::function<void(VkCommandBuffer cmd)>> m_deferredCommands;
 };
 
 }  // namespace beet::gfx
