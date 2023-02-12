@@ -13,6 +13,8 @@ VulkanCommandBuffer::VulkanCommandBuffer(Renderer& renderer) : m_renderer(render
 VulkanCommandBuffer::~VulkanCommandBuffer() {
     cleanup();
 
+    m_renderer.get_vulkan_buffer()->destroy_buffer(m_sceneDataBuffer);
+
     for (auto& frame : m_frames) {
         m_renderer.get_vulkan_buffer()->destroy_buffer(frame.cameraBuffer);
     }

@@ -50,6 +50,9 @@ void VulkanDevice::init_vulkan() {
 
     m_graphicsQueue = vkbDevice.get_queue(vkb::QueueType::graphics).value();
     m_graphicsQueueFamily = vkbDevice.get_queue_index(vkb::QueueType::graphics).value();
+
+    m_gpuProperties = vkbDevice.physical_device.properties;
+    log::info("minimum alignment: {}", m_gpuProperties.limits.minUniformBufferOffsetAlignment);
 }
 
 }  // namespace beet::gfx

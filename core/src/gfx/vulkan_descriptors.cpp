@@ -28,49 +28,56 @@ VulkanDescriptors::~VulkanDescriptors() {
 void VulkanDescriptors::init_descriptors() {
     auto device = m_renderer.get_vulkan_device()->get_device();
 
+    //===DESCRIPTOR POOLS===//
     {
         std::vector<VkDescriptorPoolSize> sizes = {{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 10},
+                                                   {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 10},
                                                    {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 10}};
 
-        VkDescriptorPoolCreateInfo pool_info = {};
-        pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-        pool_info.flags = 0;
-        pool_info.maxSets = 10;
-        pool_info.poolSizeCount = (uint32_t)sizes.size();
-        pool_info.pPoolSizes = sizes.data();
+        VkDescriptorPoolCreateInfo poolInfo = {};
+        poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        poolInfo.flags = 0;
+        poolInfo.maxSets = 10;
+        poolInfo.poolSizeCount = (uint32_t)sizes.size();
+        poolInfo.pPoolSizes = sizes.data();
 
-        auto result = vkCreateDescriptorPool(device, &pool_info, nullptr, &m_descriptorPool);
+        auto result = vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_descriptorPool);
         BEET_ASSERT_MESSAGE(result == VK_SUCCESS, "Error: Vulkan failed to create descriptor pool");
     }
+    //===GLOBAL BINDINGS====//
     {
-        VkDescriptorSetLayoutBinding camBufferBinding = {};
-        camBufferBinding.binding = 0;
-        camBufferBinding.descriptorCount = 1;
-        camBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-        camBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+        auto cameraBind =
+            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT, 0);
+
+        auto sceneBind = init::descriptorset_layout_binding(
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1);
+
+        std::array<VkDescriptorSetLayoutBinding, 2> globalBindings = {cameraBind, sceneBind};
 
         VkDescriptorSetLayoutCreateInfo setInfo = {};
-        setInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        setInfo.pNext = nullptr;
-        setInfo.bindingCount = 1;
+        setInfo.bindingCount = (uint32_t)globalBindings.size();
         setInfo.flags = 0;
-        setInfo.pBindings = &camBufferBinding;
+        setInfo.pNext = nullptr;
+        setInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        setInfo.pBindings = globalBindings.data();
 
-        auto resultLayout = vkCreateDescriptorSetLayout(device, &setInfo, nullptr, &m_globalSetLayout);
-        BEET_ASSERT_MESSAGE(resultLayout == VK_SUCCESS, "Error: Vulkan failed to create descriptor set layout");
+        vkCreateDescriptorSetLayout(device, &setInfo, nullptr, &m_globalSetLayout);
     }
+    //===MATERIAL BINDINGS===//
     {
+        auto albedoBind = init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                             VK_SHADER_STAGE_FRAGMENT_BIT, 0);
+        auto normalBind = init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                             VK_SHADER_STAGE_FRAGMENT_BIT, 1);
+        auto metallicBind = init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                               VK_SHADER_STAGE_FRAGMENT_BIT, 2);
+        auto roughnessBind = init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                                VK_SHADER_STAGE_FRAGMENT_BIT, 3);
+        auto occlusionBind = init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                                VK_SHADER_STAGE_FRAGMENT_BIT, 4);
+
         std::array<VkDescriptorSetLayoutBinding, 5> textureBindings{
-            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                               0),
-            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                               1),
-            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                               2),
-            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                               3),
-            init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                               4),
+            albedoBind, normalBind, metallicBind, roughnessBind, occlusionBind,
         };
 
         VkDescriptorSetLayoutCreateInfo setInfo = {};
@@ -82,6 +89,12 @@ void VulkanDescriptors::init_descriptors() {
 
         auto resultLayout = vkCreateDescriptorSetLayout(device, &setInfo, nullptr, &m_textureLayout);
         BEET_ASSERT_MESSAGE(resultLayout == VK_SUCCESS, "Error: Vulkan failed to create descriptor set layout texture");
+    }
+    {
+        const size_t sceneParamBufferSize =
+            FRAME_OVERLAP_COUNT * Renderer::pad_uniform_buffer_size(sizeof(GPUSceneData), "GPUSceneData");
+        m_renderer.get_vulkan_command_buffer()->get_scene_data_buffer() = m_renderer.get_vulkan_buffer()->create_buffer(
+            sceneParamBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
     {
         for (auto& frame : m_renderer.get_vulkan_command_buffer()->get_frame_data()) {
@@ -96,20 +109,25 @@ void VulkanDescriptors::init_descriptors() {
             allocInfo.pSetLayouts = &m_globalSetLayout;
             vkAllocateDescriptorSets(device, &allocInfo, &frame.globalDescriptor);
 
-            VkDescriptorBufferInfo bufferInfo;
-            bufferInfo.buffer = frame.cameraBuffer.buffer;
-            bufferInfo.offset = 0;
-            bufferInfo.range = sizeof(GPUCameraData);
+            VkDescriptorBufferInfo cameraInfo;
+            cameraInfo.buffer = frame.cameraBuffer.buffer;
+            cameraInfo.offset = 0;
+            cameraInfo.range = sizeof(GPUCameraData);
 
-            VkWriteDescriptorSet setWrite = {};
-            setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            setWrite.pNext = nullptr;
-            setWrite.dstBinding = 0;
-            setWrite.dstSet = frame.globalDescriptor;
-            setWrite.descriptorCount = 1;
-            setWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            setWrite.pBufferInfo = &bufferInfo;
-            vkUpdateDescriptorSets(device, 1, &setWrite, 0, nullptr);
+            VkDescriptorBufferInfo sceneInfo;
+            sceneInfo.buffer = m_renderer.get_vulkan_command_buffer()->get_scene_data_buffer().buffer;
+            sceneInfo.offset = 0;
+            sceneInfo.range = sizeof(GPUSceneData);
+
+            VkWriteDescriptorSet cameraWrite = init::write_descriptor_buffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                                                             frame.globalDescriptor, &cameraInfo, 0);
+
+            VkWriteDescriptorSet sceneWrite = init::write_descriptor_buffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
+                                                                            frame.globalDescriptor, &sceneInfo, 1);
+
+            VkWriteDescriptorSet setWrites[] = {cameraWrite, sceneWrite};
+
+            vkUpdateDescriptorSets(device, 2, setWrites, 0, nullptr);
         }
     }
 }

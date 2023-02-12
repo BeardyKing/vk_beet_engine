@@ -32,6 +32,18 @@ struct GPUCameraData {
     mat4 viewProj;
 };
 
+struct GPUSceneData {
+    vec4 sunlightDirection;  // .xyz direction // .w power
+    vec4 sunlightColor;      // .xyzw unused
+    vec4 fogColor;           // .xyz color     // .w exponent
+    vec4 fogDistances;       // .x min         // .y max       // .zw unused.
+                             //
+    vec4 ambientColor;       // .xyz color     // .w unused
+    vec4 unused1;            // .xyzw unused
+    vec4 unused2;            // .xyzw unused
+    vec4 unused3;            // .xyzw unused
+};
+
 //===DOUBLE BUFFER CONTENTS===//
 struct FrameData {
     VkSemaphore presentSemaphore;

@@ -60,11 +60,13 @@ class Renderer : public Subsystem {
     void upload_mesh(gfx::Mesh& mesh);
     void destroy_mesh(gfx::Mesh& mesh);
     std::shared_ptr<gfx::VulkanPipeline> generate_lit_pipeline();
+    static size_t pad_uniform_buffer_size(size_t originalSize, const std::string& bufferName, bool verbose = false);
     // TODO: REPLACE WITH SAMPLER IN RES MANAGER
     VkSampler get_linear_sampler() { return m_linearSampler; };
 
    private:
     void update_camera_descriptor();
+    void update_scene_descriptor();
     void set_clear_info(VkRenderPassBeginInfo& info);
     DynamicViewport update_viewport_scissor();
 
@@ -79,6 +81,10 @@ class Renderer : public Subsystem {
     std::shared_ptr<gfx::VulkanCommandBuffer> m_commandBuffer;
     std::shared_ptr<gfx::VulkanRenderPass> m_renderPass;
     std::shared_ptr<gfx::VulkanCommandQueue> m_commandQueue;
+
+    gfx::GPUSceneData m_sceneData{
+        vec4{0, -1, 0, 0}, vec4{1.0f, 0.0f, 1.0f, 1.0f}, vec4{0}, vec4{0}, vec4{0},
+    };
 
     VkSampler m_linearSampler = {};
 };

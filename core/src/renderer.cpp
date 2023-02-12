@@ -101,8 +101,6 @@ void Renderer::on_update(double deltaTime) {
     render_sync();
     m_commandBuffer->reset();
 
-
-
     auto result = m_swapchain->acquire_next_image();
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreate_swap_chain();
@@ -117,6 +115,7 @@ void Renderer::on_update(double deltaTime) {
     auto dynamicViewport = update_viewport_scissor();
 
     update_camera_descriptor();
+    update_scene_descriptor();
 
     auto cmd = m_commandBuffer->get_main_command_buffer();
     {
@@ -135,9 +134,16 @@ void Renderer::on_update(double deltaTime) {
                     auto pipeline = litPipeline->get_pipeline();
                     auto pipelineLayout = litPipeline->get_pipeline_layout();
                     auto globalDescriptor = get_vulkan_command_buffer()->get_global_descriptor();
+
                     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-                    vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-                                            &globalDescriptor, 0, nullptr);
+                    {
+                        // bind global graphics descriptors { camera, scene }
+                        uint32_t uniform_offset = pad_uniform_buffer_size(sizeof(gfx::GPUSceneData), "GPUSceneData") *
+                                                  m_commandBuffer->get_current_frame_index();
+                        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
+                                                &globalDescriptor, 1, &uniform_offset);
+                    }
+
                     // TODO:END
 
                     auto world = Scene::get_world().get();
@@ -171,6 +177,20 @@ void Renderer::on_update(double deltaTime) {
     m_commandQueue->submit();
     m_swapchain->present();
     m_commandBuffer->next_frame();
+}
+
+void Renderer::update_scene_descriptor() {
+    auto allocator = m_buffer->get_allocator();
+    auto allocatedBuffer = m_commandBuffer->get_scene_data_buffer();
+    uint32_t frameIdx = m_commandBuffer->get_current_frame_index();
+
+    //===SCENE::UPDATE_GLOBAL_DESCRIPTOR===//
+    // TODO: only update this buffer for 2 frames after the data has changed.
+    char* sceneData;
+    vmaMapMemory(allocator, allocatedBuffer.allocation, (void**)&sceneData);
+    sceneData += pad_uniform_buffer_size(sizeof(gfx::GPUSceneData), "GPUSceneData") * frameIdx;
+    memcpy(sceneData, &m_sceneData, sizeof(gfx::GPUSceneData));
+    vmaUnmapMemory(allocator, allocatedBuffer.allocation);
 }
 
 void Renderer::update_camera_descriptor() {
@@ -259,6 +279,21 @@ void Renderer::destroy_mesh(gfx::Mesh& mesh) {
 std::optional<std::reference_wrapper<Renderer>> Renderer::get_renderer() {
     BEET_ASSERT_MESSAGE(s_renderer.has_value(), "Renderer does not exist")
     return s_renderer;
+}
+
+size_t Renderer::pad_uniform_buffer_size(size_t originalSize,
+                                         const std::string& bufferName,
+                                         bool verbose /* = false */) {
+    auto device = Renderer::get_renderer().value().get().get_vulkan_device().get();
+    size_t minUboAlignment = device->get_gpu_properties().limits.minUniformBufferOffsetAlignment;
+    size_t alignedSize = originalSize;
+    if (minUboAlignment > 0) {
+        alignedSize = (alignedSize + minUboAlignment - 1) & ~(minUboAlignment - 1);
+    }
+    if (verbose) {
+        log::warn("free space in buffer [{}] aligning up to [{}] from [{}]", bufferName, alignedSize, originalSize);
+    }
+    return alignedSize;
 }
 
 Renderer::~Renderer() {

@@ -17,6 +17,7 @@ class VulkanDevice {
     VkSurfaceKHR get_surface() { return m_surface; }
     VkQueue get_graphics_queue() { return m_graphicsQueue; }
     uint32_t get_queue_family() { return m_graphicsQueueFamily; }
+    VkPhysicalDeviceProperties get_gpu_properties() { return m_gpuProperties; };
     VkInstance get_instance() { return m_instance; }
 
     void wait_idle() { vkDeviceWaitIdle(m_device); }
@@ -28,6 +29,7 @@ class VulkanDevice {
     VkInstance m_instance;
     VkDebugUtilsMessengerEXT m_debugMessenger;
     VkPhysicalDevice m_chosenGPU;
+    VkPhysicalDeviceProperties m_gpuProperties;
     VkDevice m_device;
     VkSurfaceKHR m_surface;
 

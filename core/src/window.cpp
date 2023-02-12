@@ -115,7 +115,7 @@ void Window::toggle_fullscreen_internal() {
 
         glfwSetWindowMonitor(m_window, bestmonitor, windowPos.x, 0, bestMode->width, bestMode->height,
                              bestMode->refreshRate);
-    } else if (!m_fullscreen) {
+    } else {
         glfwSetWindowMonitor(m_window, NULL, windowPos.x, windowPos.y + WINDOWS_TITLE_BAR_SIZE, m_width, m_height, 0);
     }
 
@@ -134,18 +134,13 @@ double Window::get_delta_time() {
 
 void Window::on_late_update() {}
 void Window::on_destroy() {}
+
 void Window::swap_frame() {
     glfwSwapBuffers(m_window);
 }
 
 void Window::setup_callbacks() {
     glfwSetWindowSizeCallback(m_window, Window::window_size_callback);
-
-    //    glfwSetKeyCallback(m_window, Window::window_key_callback);
-    //    glfwSetCharCallback(m_window, Window::window_char_callback);
-    //    glfwSetMouseButtonCallback(m_window, Window::window_mouse_button_callback);
-    //    glfwSetScrollCallback(m_window, Window::window_scroll_event);
-    //    glfwSetCursorPosCallback(m_window, Window::window_mouse_event_callback);
 }
 
 void Window::wait_events() {
