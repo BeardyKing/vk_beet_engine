@@ -30,6 +30,7 @@ struct GPUCameraData {
     mat4 view;
     mat4 proj;
     mat4 viewProj;
+    vec4 position; // .xyz position // .w unused
 };
 
 struct GPUSceneData {
@@ -60,5 +61,12 @@ struct FrameData {
 constexpr unsigned int FRAME_OVERLAP_COUNT = 2;
 
 enum class ShaderType { Vertex, Fragment, LAST };
-enum class PipelineType { Invalid, Lit, LAST };
+enum class PipelineType { Invalid, Lit, Sky, LAST };
+
+struct SkyPipeline {
+    ShaderType type{PipelineType::Sky};
+};
+struct LitPipeline {
+    ShaderType type{PipelineType::Lit};
+};
 }  // namespace beet::gfx

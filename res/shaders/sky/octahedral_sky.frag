@@ -15,12 +15,7 @@ layout (set = 0, binding = 1) uniform SceneData {
     //128
 } sceneData;
 
-//===LOCAL===//
-layout (set = 1, binding = 0) uniform sampler2D u_albedo;
-layout (set = 1, binding = 1) uniform sampler2D u_normal;
-layout (set = 1, binding = 2) uniform sampler2D u_metallic;
-layout (set = 1, binding = 3) uniform sampler2D u_roughness;
-layout (set = 1, binding = 4) uniform sampler2D u_occlusion;
+layout (set = 0, binding = 2) uniform sampler2D u_skyOct;
 
 //===STAGE IN===//
 layout (location = 0) in StageLayout {
@@ -36,10 +31,5 @@ layout (location = 0) out vec4 outFragColor;
 void main()
 {
     vec2 uv = stageLayout.uv;
-    vec4 outcol = vec4(texture(u_albedo, uv).xyz, 1.0f);
-    outcol = mix(outcol, vec4(texture(u_normal, uv).xyz, 1.0f), 0.5f);
-    outcol = mix(outcol, vec4(texture(u_metallic, uv).xyz, 1.0f), 0.5f);
-    outcol = mix(outcol, vec4(texture(u_roughness, uv).xyz, 1.0f), 0.5f);
-    outcol = mix(outcol, vec4(texture(u_occlusion, uv).xyz, 1.0f), 0.5f);
-    outFragColor = mix(outcol, sceneData.sunlightColor, 0.5f);
+    outFragColor = vec4(texture(u_skyOct, uv).xyz, 1.0f);
 }

@@ -104,7 +104,9 @@ void VulkanPipeline::build(const VertexInputDescription& vertexDescription,
 
     //===BUILD DEPTH===//
     // FIXME:   ONLY SUPPORTING DEPTH COMPARE (UNTIL PARTICLE SYSTEM IMPL)
-    m_depthStencil = init::depth_stencil_create_info(true, true, VK_COMPARE_OP_LESS_OR_EQUAL);
+
+    m_depthStencil =
+        init::depth_stencil_create_info(vertexDescription.flagWriteDepth, true, VK_COMPARE_OP_LESS_OR_EQUAL);
 
     //===BUILD PIPELINE===//
     VkGraphicsPipelineCreateInfo pipelineInfo = {};

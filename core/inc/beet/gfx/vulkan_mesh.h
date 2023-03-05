@@ -12,6 +12,7 @@ struct VertexInputDescription {
     std::vector<VkVertexInputAttributeDescription> attributes;
 
     VkPipelineVertexInputStateCreateFlags flags = 0;
+    bool flagWriteDepth = true;
 };
 
 struct Vertex {

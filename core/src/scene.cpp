@@ -22,18 +22,31 @@ void Scene::on_awake() {
 }
 
 void Scene::build_scene_manual() {
+    //=== CAMERA ===//
     {
         auto e_camera = m_world->entity("Camera");
         auto transform = e_camera.set(Transform(vec3(0.0f, 0.0f, -3.0f), vec3(1), vec3(0, 0, 0))).get_mut<Transform>();
         e_camera.set(Camera()).get_mut<Camera>()->set_look_target(transform->get_position() + transform->forward());
         e_camera.set(EditorCameraController());
     }
+    //=== SKYBOX ===//
     {
-        auto e_vikingRoom = m_world->entity("viking room");
-        e_vikingRoom.set(Transform(vec3(-50.0f, -30.0f, 100.0f), vec3(1), vec3(0, 90, 90)));
-        e_vikingRoom.set(ResourceManager::load_mesh("../res/misc/Cerberus_LP.fbx"));
+        auto e_sky = m_world->entity("sky box");
+        e_sky.set(Transform(vec3(0), vec3(10), vec3(0,0,0)));
+        e_sky.set(ResourceManager::load_mesh("../res/misc/octahedron.fbx"));
+        e_sky.set(gfx::SkyPipeline());
 
-        auto material = e_vikingRoom.add<Material>().get_mut<Material>();
+        auto material = e_sky.add<Material>().get_mut<Material>();
+        material->set_pipeline_type(gfx::PipelineType::Sky);
+    }
+    //=== WORLD OBJECTS ===//
+    {
+        auto e_gun = m_world->entity("gun");
+        e_gun.set(Transform(vec3(-50.0f, -30.0f, 100.0f), vec3(1), vec3(0, 90, 90)));
+        e_gun.set(ResourceManager::load_mesh("../res/misc/Cerberus_LP.fbx"));
+        e_gun.set(gfx::LitPipeline());
+
+        auto material = e_gun.add<Material>().get_mut<Material>();
         material->set_pipeline_type(gfx::PipelineType::Lit);
         material->set_albedo_texture(ResourceManager::load_texture("../res/textures/Cerberus/Cerberus_A.jpg"));
         material->set_normal_texture(ResourceManager::load_texture("../res/textures/Cerberus/Cerberus_N.jpg"));

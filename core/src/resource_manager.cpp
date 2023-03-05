@@ -28,6 +28,7 @@ void ResourceManager::load_resources_manual() {
 void ResourceManager::load_manual_textures() {
     load_texture_internal("../res/textures/viking_room.png");
     load_texture_internal("../res/textures/UV_Grid_test.png");
+    load_texture_internal("../res/textures/skybox/octahedral_uv_test.png");
 
     load_texture_internal("../res/textures/Cerberus/Cerberus_A.jpg");
     load_texture_internal("../res/textures/Cerberus/Cerberus_M.jpg");
@@ -38,6 +39,7 @@ void ResourceManager::load_manual_textures() {
 void ResourceManager::generate_pipelines() {
     Renderer& renderer = Renderer::get_renderer().value().get();
     m_pipelines[(size_t)gfx::PipelineType::Lit] = renderer.generate_lit_pipeline();
+    m_pipelines[(size_t)gfx::PipelineType::Sky] = renderer.generate_sky_pipeline();
 }
 
 std::optional<std::reference_wrapper<ResourceManager>> ResourceManager::get_resource_manager() {

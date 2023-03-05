@@ -60,6 +60,7 @@ class Renderer : public Subsystem {
     void upload_mesh(gfx::Mesh& mesh);
     void destroy_mesh(gfx::Mesh& mesh);
     std::shared_ptr<gfx::VulkanPipeline> generate_lit_pipeline();
+    std::shared_ptr<gfx::VulkanPipeline> generate_sky_pipeline();
     static size_t pad_uniform_buffer_size(size_t originalSize, const std::string& bufferName, bool verbose = false);
     // TODO: REPLACE WITH SAMPLER IN RES MANAGER
     VkSampler get_linear_sampler() { return m_linearSampler; };

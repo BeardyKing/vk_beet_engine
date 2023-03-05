@@ -33,6 +33,9 @@ struct DynamicViewport {
 
 namespace beet {
 
+void draw_sky(VkCommandBuffer& cmd);
+void draw_lit(VkCommandBuffer& cmd);
+
 Renderer::Renderer() {
     s_renderer = std::ref(*this);
 
@@ -42,7 +45,6 @@ Renderer::Renderer() {
     m_commandBuffer = std::make_shared<gfx::VulkanCommandBuffer>(*this);
     m_renderPass = std::make_shared<gfx::VulkanRenderPass>(*this);
     m_commandQueue = std::make_shared<gfx::VulkanCommandQueue>(*this);
-    m_descriptors = std::make_shared<gfx::VulkanDescriptors>(*this);
 
     // TODO:    Create sampler class and add to the resource manager.
     VkSamplerCreateInfo samplerInfo = gfx::init::sampler_create_info(VK_FILTER_LINEAR);
@@ -58,15 +60,15 @@ struct MeshPushConstants {
 std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
     auto litPipeline = std::make_shared<gfx::VulkanPipeline>(*this);
 
-    auto triRedVertSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.vert.spv");
-    auto triRedFragSrc = AssetLoader::load_shader_binary("../res/shaders/standard_unlit.frag.spv");
-    gfx::VulkanShaderModules redTriangleShader(*this);
-    redTriangleShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
-    redTriangleShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
+    auto triRedVertSrc = AssetLoader::load_shader_binary("../res/shaders/lit/standard_lit.vert.spv");
+    auto triRedFragSrc = AssetLoader::load_shader_binary("../res/shaders/lit/standard_lit.frag.spv");
+    gfx::VulkanShaderModules litShader(*this);
+    litShader.load(triRedVertSrc, gfx::ShaderType::Vertex);
+    litShader.load(triRedFragSrc, gfx::ShaderType::Fragment);
 
     {
         gfx::VertexInputDescription vertexDescription = gfx::Vertex::get_vertex_description();
-        litPipeline->add_stages(redTriangleShader);
+        litPipeline->add_stages(litShader);
 
         VkPushConstantRange pushConstant;
         pushConstant.offset = 0;
@@ -79,7 +81,37 @@ std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_lit_pipeline() {
     return litPipeline;
 }
 
-void Renderer::on_awake() {}
+std::shared_ptr<gfx::VulkanPipeline> Renderer::generate_sky_pipeline() {
+    auto litPipeline = std::make_shared<gfx::VulkanPipeline>(*this);
+
+    auto vertSrc = AssetLoader::load_shader_binary("../res/shaders/sky/octahedral_sky.vert.spv");
+    auto fragSrc = AssetLoader::load_shader_binary("../res/shaders/sky/octahedral_sky.frag.spv");
+    gfx::VulkanShaderModules skyShader(*this);
+    skyShader.load(vertSrc, gfx::ShaderType::Vertex);
+    skyShader.load(fragSrc, gfx::ShaderType::Fragment);
+
+    {
+        gfx::VertexInputDescription vertexDescription = gfx::Vertex::get_vertex_description();
+        litPipeline->add_stages(skyShader);
+
+        VkPushConstantRange pushConstant;
+        pushConstant.offset = 0;
+        pushConstant.size = sizeof(MeshPushConstants);
+        pushConstant.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+        // TODO: disable depth write for sky shader.
+
+        vertexDescription.flagWriteDepth = false;
+
+        litPipeline->build(vertexDescription, pushConstant);
+    }
+
+    return litPipeline;
+}
+
+void Renderer::on_awake() {
+    m_descriptors = std::make_shared<gfx::VulkanDescriptors>(*this);
+}
 
 void Renderer::recreate_swap_chain() {
     Window& window = Window::get_window().value().get();
@@ -95,8 +127,7 @@ void Renderer::recreate_swap_chain() {
     m_swapchain->recreate();
     m_renderPass->recreate();
 }
-bool dirtyOnRender = false;
-bool dirtyOnFirstRender = false;
+
 void Renderer::on_update(double deltaTime) {
     render_sync();
     m_commandBuffer->reset();
@@ -127,46 +158,9 @@ void Renderer::on_update(double deltaTime) {
                     vkCmdSetViewport(cmd, 0, 1, &dynamicViewport.viewport);
                     vkCmdSetScissor(cmd, 0, 1, &dynamicViewport.scissor);
                 }
-                {
-                    // TODO:    replace with a query for all entities that are `LIT` / other valid pipelines
-                    //          and then iterate overtime respectively.
-                    auto litPipeline = ResourceManager::get_pipeline(gfx::PipelineType::Lit).get();
-                    auto pipeline = litPipeline->get_pipeline();
-                    auto pipelineLayout = litPipeline->get_pipeline_layout();
-                    auto globalDescriptor = get_vulkan_command_buffer()->get_global_descriptor();
 
-                    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
-                    {
-                        // bind global graphics descriptors { camera, scene }
-                        uint32_t uniform_offset = pad_uniform_buffer_size(sizeof(gfx::GPUSceneData), "GPUSceneData") *
-                                                  m_commandBuffer->get_current_frame_index();
-                        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1,
-                                                &globalDescriptor, 1, &uniform_offset);
-                    }
-
-                    // TODO:END
-
-                    auto world = Scene::get_world().get();
-                    world->each([cmd](flecs::entity e, const Transform& transform, const Material& material,
-                                      const std::shared_ptr<gfx::Mesh>& mesh) {
-                        auto layout = material.get_vulkan_pipeline()->get_pipeline_layout();
-
-                        VkDeviceSize offset = 0;
-                        vkCmdBindVertexBuffers(cmd, 0, 1, &mesh->vertexBuffer.buffer, &offset);
-
-                        MeshPushConstants tmpConstants{
-                            glm::vec4{0},
-                            transform.get_model_matrix(),
-                        };
-
-                        vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants),
-                                           &tmpConstants);
-
-                        material.bind_descriptor(cmd);
-
-                        vkCmdDraw(cmd, mesh->vertices.size(), 1, 0, 0);
-                    });
-                }
+                draw_sky(cmd);
+                draw_lit(cmd);
             }
             vkCmdEndRenderPass(cmd);
         }
@@ -177,6 +171,77 @@ void Renderer::on_update(double deltaTime) {
     m_commandQueue->submit();
     m_swapchain->present();
     m_commandBuffer->next_frame();
+}
+
+void draw_sky(VkCommandBuffer& cmd) {
+    auto& renderer = Renderer::get_renderer().value().get();
+    auto litPipeline = ResourceManager::get_pipeline(gfx::PipelineType::Sky).get();
+    auto pipeline = litPipeline->get_pipeline();
+    auto pipelineLayout = litPipeline->get_pipeline_layout();
+    auto globalDescriptor = renderer.get_vulkan_command_buffer()->get_global_descriptor();
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    {
+        // bind global graphics descriptors { camera, scene }
+        uint32_t uniform_offset = Renderer::pad_uniform_buffer_size(sizeof(gfx::GPUSceneData), "GPUSceneData") *
+                                  renderer.get_vulkan_command_buffer()->get_current_frame_index();
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &globalDescriptor, 1,
+                                &uniform_offset);
+    }
+
+    auto world = Scene::get_world().get();
+    world->each([cmd](flecs::entity e, const Transform& transform, const Material& material,
+                      const std::shared_ptr<gfx::Mesh>& mesh, const gfx::SkyPipeline pipelineTags) {
+        auto layout = material.get_vulkan_pipeline()->get_pipeline_layout();
+        VkDeviceSize offset = 0;
+        vkCmdBindVertexBuffers(cmd, 0, 1, &mesh->vertexBuffer.buffer, &offset);
+
+        // TODO when mips supported add skybox mip selection via "data"
+        MeshPushConstants tmpConstants{
+            glm::vec4{0},
+            glm::mat4(1.0f),
+        };
+
+        vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &tmpConstants);
+        vkCmdDraw(cmd, mesh->vertices.size(), 1, 0, 0);
+    });
+}
+
+void draw_lit(VkCommandBuffer& cmd) {
+    auto& renderer = Renderer::get_renderer().value().get();
+    auto litPipeline = ResourceManager::get_pipeline(gfx::PipelineType::Lit).get();
+    auto pipeline = litPipeline->get_pipeline();
+    auto pipelineLayout = litPipeline->get_pipeline_layout();
+    auto globalDescriptor = renderer.get_vulkan_command_buffer()->get_global_descriptor();
+
+    vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+    {
+        // bind global graphics descriptors { camera, scene }
+        uint32_t uniform_offset = Renderer::pad_uniform_buffer_size(sizeof(gfx::GPUSceneData), "GPUSceneData") *
+                                  renderer.get_vulkan_command_buffer()->get_current_frame_index();
+        vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &globalDescriptor, 1,
+                                &uniform_offset);
+    }
+
+    auto world = Scene::get_world().get();
+    world->each([cmd](flecs::entity e, const Transform& transform, const Material& material,
+                      const std::shared_ptr<gfx::Mesh>& mesh, const gfx::LitPipeline pipelineTag) {
+        auto layout = material.get_vulkan_pipeline()->get_pipeline_layout();
+
+        VkDeviceSize offset = 0;
+        vkCmdBindVertexBuffers(cmd, 0, 1, &mesh->vertexBuffer.buffer, &offset);
+
+        MeshPushConstants tmpConstants{
+            glm::vec4{0},
+            transform.get_model_matrix(),
+        };
+
+        vkCmdPushConstants(cmd, layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(MeshPushConstants), &tmpConstants);
+
+        material.bind_descriptor(cmd);
+
+        vkCmdDraw(cmd, mesh->vertices.size(), 1, 0, 0);
+    });
 }
 
 void Renderer::update_scene_descriptor() {
@@ -206,7 +271,7 @@ void Renderer::update_camera_descriptor() {
             const mat4 view = lookAt(position, camera.get_look_target(), transform.up());
             const mat4 viewProjection = projection * view;
 
-            const gfx::GPUCameraData camData{projection, view, viewProjection};
+            const gfx::GPUCameraData camData{projection, view, viewProjection, vec4(position, 1.0f)};
 
             //===CAMERA::UPDATE_GLOBAL_DESCRIPTOR===//
             void* data;

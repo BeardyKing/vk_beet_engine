@@ -7,6 +7,7 @@
 #include <beet/assert.h>
 #include <beet/log.h>
 #include <beet/renderer.h>
+#include <beet/resource_manager.h>
 
 namespace beet::gfx {
 
@@ -52,7 +53,10 @@ void VulkanDescriptors::init_descriptors() {
         auto sceneBind = init::descriptorset_layout_binding(
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 1);
 
-        std::array<VkDescriptorSetLayoutBinding, 2> globalBindings = {cameraBind, sceneBind};
+        auto skyOctBind = init::descriptorset_layout_binding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                             VK_SHADER_STAGE_FRAGMENT_BIT, 2);
+
+        std::array<VkDescriptorSetLayoutBinding, 3> globalBindings = {cameraBind, sceneBind, skyOctBind};
 
         VkDescriptorSetLayoutCreateInfo setInfo = {};
         setInfo.bindingCount = (uint32_t)globalBindings.size();
@@ -90,13 +94,19 @@ void VulkanDescriptors::init_descriptors() {
         auto resultLayout = vkCreateDescriptorSetLayout(device, &setInfo, nullptr, &m_textureLayout);
         BEET_ASSERT_MESSAGE(resultLayout == VK_SUCCESS, "Error: Vulkan failed to create descriptor set layout texture");
     }
+
     {
         const size_t sceneParamBufferSize =
             FRAME_OVERLAP_COUNT * Renderer::pad_uniform_buffer_size(sizeof(GPUSceneData), "GPUSceneData");
         m_renderer.get_vulkan_command_buffer()->get_scene_data_buffer() = m_renderer.get_vulkan_buffer()->create_buffer(
             sceneParamBufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
     }
+
     {
+        Renderer& renderer = Renderer::get_renderer().value().get();
+        auto linearSampler = renderer.get_linear_sampler();
+        auto image = ResourceManager::load_texture("../res/textures/skybox/octahedral_uv_test.png");
+
         for (auto& frame : m_renderer.get_vulkan_command_buffer()->get_frame_data()) {
             frame.cameraBuffer = m_renderer.get_vulkan_buffer()->create_buffer(
                 sizeof(GPUCameraData), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VMA_MEMORY_USAGE_CPU_TO_GPU);
@@ -125,9 +135,16 @@ void VulkanDescriptors::init_descriptors() {
             VkWriteDescriptorSet sceneWrite = init::write_descriptor_buffer(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC,
                                                                             frame.globalDescriptor, &sceneInfo, 1);
 
-            VkWriteDescriptorSet setWrites[] = {cameraWrite, sceneWrite};
+            VkDescriptorImageInfo imageBufferInfo = {};
+            imageBufferInfo.sampler = linearSampler;
+            imageBufferInfo.imageView = image->imageView;
+            imageBufferInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            VkWriteDescriptorSet skyOctWrite = gfx::init::write_descriptor_image(
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, frame.globalDescriptor, &imageBufferInfo, 2);
 
-            vkUpdateDescriptorSets(device, 2, setWrites, 0, nullptr);
+            VkWriteDescriptorSet setWrites[] = {cameraWrite, sceneWrite, skyOctWrite};
+
+            vkUpdateDescriptorSets(device, 3, setWrites, 0, nullptr);
         }
     }
 }
